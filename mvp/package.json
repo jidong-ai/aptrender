@@ -1,0 +1,24 @@
+{
+  "name": "weave-mvp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Weave S#5·6 태블릿 ↔ XR뷰 연동 MVP (로컬 LAN 전용)",
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "node server/index.js",
+    "build": "vite build",
+    "start": "vite build && node server/index.js --prod",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "sirv": "^3.0.2",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.2"
+  }
+}

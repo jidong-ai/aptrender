@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <!-- 홈 화면에 추가하면 주소창 없이 열린다 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Weave 태블릿" />
+    <title>Weave · 태블릿</title>
+  </head>
+  <body class="tablet">
+    <main>
+      <div class="presets" role="group" aria-label="재질 조합">
+        <button type="button" data-preset="A">A</button>
+        <button type="button" data-preset="B">B</button>
+        <button type="button" data-preset="C">C</button>
+      </div>
+      <div class="debug">
+        <button type="button" id="drop">5초간 연결 끊기 (재접속 테스트)</button>
+        <button type="button" id="reset">상태 리셋</button>
+      </div>
+    </main>
+    <script type="module" src="/src/tablet/main.js"></script>
+  </body>
+</html>

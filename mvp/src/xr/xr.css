@@ -1,0 +1,33 @@
+.xr {
+  overflow: hidden;
+  background: #2a2a2a; /* 첫 스냅샷을 받기 전 */
+}
+
+/* 전시 상태(HUD 숨김)에서는 마우스 커서도 숨긴다 */
+.xr:not(.show-guides) {
+  cursor: none;
+}
+
+.stage {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: center;
+  display: grid;
+  place-items: center;
+}
+
+/* HUD가 보일 때만 16:9 무대 경계를 표시(맥북에서 아이맥 구도 확인용) */
+.show-guides .stage {
+  outline: 2px dashed rgb(255 255 255 / 0.35);
+  outline-offset: -2px;
+}
+
+.preset-label {
+  font-size: 360px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgb(255 255 255 / 0.9);
+}
