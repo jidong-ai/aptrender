@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import WebSocket from 'ws';
-import { listPanos, startServer } from '../server/app.js';
+import { listLayers, listPanos, startServer } from '../server/app.js';
 
 let server;
 before(async () => {
@@ -177,4 +177,19 @@ test('spot은 매니저·고객을 따로 갱신할 수 있고, 잘못된 시점
   tablet.send({ type: 'patch', patch: { spot: { manager: 'v9' } } });
   assert.match((await tablet.next('error')).message, /spot/);
   await Promise.all([tablet.close(), xr.close()]);
+});
+
+test('레이어 목록: manifest에 있고 파일이 실제로 있는 것만', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pano-'));
+  fs.mkdirSync(path.join(dir, 'layers'));
+  fs.writeFileSync(path.join(dir, 'layers', 'v2_2_base_4k.webp'), '');
+  fs.writeFileSync(
+    path.join(dir, 'layers', 'manifest.json'),
+    JSON.stringify({ layers: { v2_2_base: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': 'layers/v2_2_base_4k.webp', '8k': 'layers/v2_2_base_8k.webp' } } } }),
+  );
+  assert.deepEqual(listLayers(dir), {
+    v2_2_base: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': '/assets/pano/layers/v2_2_base_4k.webp' } },
+  });
+  assert.deepEqual(listLayers(path.join(dir, 'nope')), {});
+  fs.rmSync(dir, { recursive: true });
 });

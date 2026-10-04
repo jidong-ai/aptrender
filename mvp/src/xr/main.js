@@ -4,7 +4,7 @@ import { createSync } from '../shared/sync.js';
 import { mountHud } from '../shared/hud.js';
 import { PanoViewer } from '../shared/pano-viewer.js';
 import { attachLookControls } from '../shared/look-controls.js';
-import { createScenePlayer } from '../shared/pano-set.js';
+import { MODE_TEXT, createScenePlayer } from '../shared/pano-set.js';
 import { FLOOR_INFO, ISLAND_INFO, SPOT_INFO, describeScene } from '../shared/scene.js';
 import { wrapYaw } from '../shared/angles.js';
 import { createManagerFrame } from './manager-frame.js';
@@ -24,7 +24,7 @@ let swayOn = params.get('sway') !== '0';
 const hud = mountHud(sync, {
   role: 'xr',
   extra: () => [
-    ...(latest && scene ? [`장면: ${describeScene(latest.spot.customer, latest.island, latest.floor)} · ${scene.real ? '렌더' : '테스트 격자'}`] : []),
+    ...(latest && scene ? [`장면: ${describeScene(latest.spot.customer, latest.island, latest.floor)} · ${MODE_TEXT[scene.mode] ?? '-'}`] : []),
     `흔들림 ${swayOn ? '켬' : '끔'}`,
   ],
   hints: 'F 전체화면 · H 표시 숨김 · G 방위 격자 · S 흔들림 · D 5초 끊기 · 드래그 둘러보기',
@@ -40,9 +40,12 @@ let gaze = null;
 
 /** 고객 시선을 target 방향으로 천천히 돌린다. 이미 그쪽을 보고 있으면 그대로 둔다 */
 function gazeTo(target) {
-  if (Math.abs(wrapYaw(target.yaw - viewer.yaw)) < 12 && Math.abs(target.pitch - viewer.pitch) < 10) return;
+  if (Math.abs(wrapYaw(target.yaw - viewer.yaw)) < 12 && Math.abs(target.pitch - viewer.pitch) < 10) return false;
   gaze = { from: { yaw: viewer.yaw, pitch: viewer.pitch }, to: target, start: performance.now() };
+  return true;
 }
+// 고개를 돌리는 동안엔 배치 연출을 늦춰, 고객이 오브제가 놓이는 순간을 보게 한다
+let effectDelay = 0;
 
 attachLookControls(viewer, { onChange: () => (gaze = null) }); // 테스트용 마우스 드래그(드래그하면 자동 시선 이동 취소)
 
@@ -89,16 +92,19 @@ sync.on('change', (msg) => {
   if (msg.type !== 'patch' || !latest) return;
   const p = msg.patch;
   const spot = p.spot?.customer ?? latest.spot.customer;
+  const island = p.island ?? latest.island;
+  const floor = p.floor ?? latest.floor;
   const targets = SPOT_INFO[spot].targets;
+  const pending = scene.panos?.status(spot, island, floor) === 'missing' ? ' · 렌더 준비 중' : '';
   if (p.spot?.customer && p.spot.customer !== latest.spot.customer) {
     notify(`${josa(SPOT_INFO[spot].name, '으로', '로')} 이동`);
     gazeTo(targets.island);
   } else if (p.island && p.island !== latest.island) {
-    notify(p.island === 'none' ? '아일랜드를 치움' : `${ISLAND_INFO[p.island].name} 배치`);
-    gazeTo(targets.island);
+    notify(p.island === 'none' ? '아일랜드를 치움' : `${ISLAND_INFO[p.island].name} 배치${pending}`);
+    if (gazeTo(targets.island)) effectDelay = GAZE_MS * 0.65;
   } else if (p.floor && p.floor !== latest.floor) {
-    notify(p.floor === 'base' ? '기존 바닥으로 되돌림' : `${josa(FLOOR_INFO[p.floor].name, '으로', '로')} 변경`);
-    gazeTo(targets.floor);
+    notify(p.floor === 'base' ? '기존 바닥으로 되돌림' : `${josa(FLOOR_INFO[p.floor].name, '으로', '로')} 변경${pending}`);
+    if (gazeTo(targets.floor)) effectDelay = GAZE_MS * 0.65;
   }
 });
 
@@ -109,7 +115,8 @@ const updateFrame = () => frame.setVisible(tabletOnline && latest?.spot.manager 
 
 sync.on('state', (state) => {
   latest = structuredClone({ spot: state.spot, island: state.island, floor: state.floor });
-  scene.show(state.spot.customer, state.island, state.floor);
+  scene.show(state.spot.customer, state.island, state.floor, { delay: effectDelay });
+  effectDelay = 0;
   frame.setTarget(state.managerView);
   updateFrame();
 });

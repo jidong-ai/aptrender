@@ -4,7 +4,7 @@ import { createSync } from '../shared/sync.js';
 import { mountHud } from '../shared/hud.js';
 import { PanoViewer } from '../shared/pano-viewer.js';
 import { attachLookControls } from '../shared/look-controls.js';
-import { createScenePlayer } from '../shared/pano-set.js';
+import { MODE_TEXT, createScenePlayer } from '../shared/pano-set.js';
 import { describeScene } from '../shared/scene.js';
 
 const VIEW_SEND_MS = 100; // managerView 10Hz
@@ -15,7 +15,7 @@ let latest = null;
 let scene = null;
 const hud = mountHud(sync, {
   role: 'tablet',
-  extra: () => (latest && scene ? [`장면: ${describeScene(latest.spot.manager, latest.island, latest.floor)} · ${scene.real ? '렌더' : '테스트 격자'}`] : []),
+  extra: () => (latest && scene ? [`장면: ${describeScene(latest.spot.manager, latest.island, latest.floor)} · ${MODE_TEXT[scene.mode] ?? '-'}`] : []),
 });
 scene = createScenePlayer(viewer, {
   size: '4k',
@@ -83,9 +83,9 @@ function render(state) {
   // 점선 테두리 = 이 버튼을 누르면 렌더가 없어 테스트 격자가 보임
   const panos = scene.panos;
   if (!panos) return;
-  for (const b of buttons.spot) b.classList.toggle('no-render', !panos.hasRender(b.dataset.spot, state.island, state.floor));
-  for (const b of buttons.island) b.classList.toggle('no-render', !panos.hasRender(spot, b.dataset.island, state.floor));
-  for (const b of buttons.floor) b.classList.toggle('no-render', !panos.hasRender(spot, state.island, b.dataset.floor));
+  for (const b of buttons.spot) b.classList.toggle('no-render', !panos.available(b.dataset.spot, state.island, state.floor));
+  for (const b of buttons.island) b.classList.toggle('no-render', !panos.available(spot, b.dataset.island, state.floor));
+  for (const b of buttons.floor) b.classList.toggle('no-render', !panos.available(spot, state.island, b.dataset.floor));
 }
 
 // ---------- 서버 상태 반영 ----------

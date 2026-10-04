@@ -38,6 +38,25 @@ export function listPanos(dir = PANO_DIR) {
   return panos;
 }
 
+// npm run pano:prep이 만든 레이어 목록(assets/pano/layers/manifest.json). 파일이 실제로 있는 것만
+export function listLayers(dir = PANO_DIR) {
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(path.join(dir, 'layers', 'manifest.json'), 'utf8'));
+  } catch {
+    return {};
+  }
+  const layers = {};
+  for (const [key, layer] of Object.entries(manifest.layers ?? {})) {
+    const files = {};
+    for (const [size, rel] of Object.entries(layer.files ?? {})) {
+      if (fs.existsSync(path.join(dir, rel))) files[size] = `/assets/pano/${rel.split('/').map(encodeURIComponent).join('/')}`;
+    }
+    if (Object.keys(files).length) layers[key] = { kind: layer.kind, rect: layer.rect, files };
+  }
+  return layers;
+}
+
 const PAGES = { '/': 'index.html', '/tablet': 'tablet.html', '/xr': 'xr.html' };
 const ROLES = ['tablet', 'xr'];
 const HEARTBEAT_MS = 10_000;
@@ -120,7 +139,7 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
     }
     if (pathname === '/api/panos') {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache' });
-      res.end(JSON.stringify({ panos: listPanos() }));
+      res.end(JSON.stringify({ panos: listPanos(), layers: listLayers() }));
       return;
     }
     const page = PAGES[pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname];

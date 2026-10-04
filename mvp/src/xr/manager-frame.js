@@ -25,7 +25,7 @@ export function createManagerFrame(viewer, layer) {
   const core = new LineMaterial({ color: 0xffffff, linewidth: 3, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false });
   const lines = [new Line2(geometry, halo), new Line2(geometry, core)];
   lines.forEach((line, i) => {
-    line.renderOrder = 3 + i;
+    line.renderOrder = 100 + i; // 파노라마·격자보다 위
     line.frustumCulled = false;
     line.visible = false;
     viewer.scene.add(line);
