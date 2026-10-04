@@ -13,21 +13,38 @@
   <body class="tablet">
     <div class="view" id="view"></div>
 
-    <!-- D2: 디자인 없이 회색 버튼만. 실제 UI는 D4에 Figma 기준으로 교체 -->
+    <!-- 디자인 없이 회색 버튼만. 실제 UI는 D4에 Figma 기준으로 교체 -->
     <div class="toolbar">
-      <div class="presets" role="group" aria-label="재질 조합">
-        <button type="button" data-preset="white">화이트</button>
-        <button type="button" data-preset="A">A</button>
-        <button type="button" data-preset="B">B</button>
-        <button type="button" data-preset="C">C</button>
+      <div class="group" role="group" aria-label="시점">
+        <span class="group-label">시점</span>
+        <button type="button" data-spot="v1">V1 전체</button>
+        <button type="button" data-spot="v2">V2 앞</button>
+        <button type="button" data-spot="v3">V3 옆</button>
       </div>
+      <div class="group" role="group" aria-label="아일랜드">
+        <span class="group-label">아일랜드</span>
+        <button type="button" data-island="none">없음</button>
+        <button type="button" data-island="1">1</button>
+        <button type="button" data-island="2">2</button>
+        <button type="button" data-island="3">3</button>
+      </div>
+      <div class="group" role="group" aria-label="바닥재">
+        <span class="group-label">바닥재</span>
+        <button type="button" data-floor="base">기존</button>
+        <button type="button" data-floor="a">A</button>
+        <button type="button" data-floor="b">B</button>
+        <button type="button" data-floor="c">C</button>
+      </div>
+    </div>
+
+    <div class="corner">
+      <div class="readout" id="readout"></div>
       <div class="debug">
         <button type="button" id="grid" aria-pressed="false">방위 격자</button>
         <button type="button" id="drop">5초 끊기</button>
         <button type="button" id="reset">리셋</button>
       </div>
     </div>
-    <div class="readout" id="readout"></div>
 
     <script type="module" src="/src/tablet/main.js"></script>
   </body>

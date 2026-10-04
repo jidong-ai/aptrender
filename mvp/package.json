@@ -11,7 +11,8 @@
     "dev": "node server/index.js",
     "build": "vite build",
     "start": "vite build && node server/index.js --prod",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "pano:4k": "node scripts/make-4k.mjs"
   },
   "dependencies": {
     "qrcode-terminal": "^0.12.0",

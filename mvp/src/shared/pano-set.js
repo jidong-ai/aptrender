@@ -1,14 +1,14 @@
 import { makeTestPano } from './test-pano.js';
+import { describeScene, sceneKey } from './scene.js';
 
-// 렌더가 없는 조합은 색조만 다른 테스트 파노라마로 대신한다.
-const TINTS = { white: '#e4e4e4', A: '#dcbcb2', B: '#b4c3dc', C: '#b8d6c7' };
-export const LIGHT_NAMES = { day: '주광', warm3000: '전구색 3000K', cool6500: '주광색 6500K' };
+// 렌더가 없는 조합은 바닥재마다 색조만 다른 테스트 파노라마로 대신한다.
+const TINTS = { base: '#e4e4e4', a: '#dcbcb2', b: '#b4c3dc', c: '#b8d6c7' };
 
 /**
  * /api/panos 목록을 받아 이 화면에 맞는 크기로 전부 미리 불러온다.
  *  - size: '4k'(태블릿) | '8k'(XR). 원하는 크기가 없으면 다른 크기로 대체
  *  - maxWidth: 텍스처 최대 가로 픽셀. 넘으면 줄여서 올린다
- * textureFor(preset, light)는 실사가 있으면 실사, 없으면 테스트 파노라마를 돌려준다.
+ * textureFor(spot, island, floor)는 렌더가 있으면 렌더, 없으면 테스트 파노라마를 돌려준다.
  */
 export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) {
   let catalog = {};
@@ -59,10 +59,10 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
   pump();
 
   const tests = new Map();
-  function testTexture(preset, light) {
-    const key = `${preset}_${light}`;
+  function testTexture(spot, island, floor) {
+    const key = sceneKey(spot, island, floor);
     if (!tests.has(key)) {
-      const canvas = makeTestPano({ tint: TINTS[preset], label: `${preset} · ${LIGHT_NAMES[light]} · 렌더 없음` });
+      const canvas = makeTestPano({ tint: TINTS[floor], label: `${describeScene(spot, island, floor)} · 렌더 없음` });
       tests.set(key, viewer.canvasTexture(canvas));
     }
     return tests.get(key);
@@ -72,14 +72,13 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
 
   return {
     catalog,
-    hasRender: (preset, light) => Boolean(catalog[`${preset}_${light}`]),
-    async textureFor(preset, light) {
-      const key = `${preset}_${light}`;
-      const entry = entries.find((e) => e.key === key);
-      if (!entry) return testTexture(preset, light);
+    hasRender: (spot, island, floor) => Boolean(catalog[sceneKey(spot, island, floor)]),
+    async textureFor(spot, island, floor) {
+      const entry = entries.find((e) => e.key === sceneKey(spot, island, floor));
+      if (!entry) return testTexture(spot, island, floor);
       const i = queue.indexOf(entry);
       if (i >= 0) queue.splice(i, 1);
-      return (await load(entry)) ?? testTexture(preset, light);
+      return (await load(entry)) ?? testTexture(spot, island, floor);
     },
     /** 실제 파노라마 위에 겹쳐 보는 방위 격자(투명 배경) */
     gridOverlay() {
@@ -87,4 +86,40 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
       return gridOverlay;
     },
   };
+}
+
+/**
+ * 장면(시점·아일랜드·바닥재)을 받아 맞는 파노라마로 크로스페이드한다. 두 화면 공용.
+ * 목록을 받기 전에 들어온 장면은 기억해 뒀다가 준비되면 바로 띄운다.
+ */
+export function createScenePlayer(viewer, { onChange = () => {}, ...options }) {
+  let panos = null;
+  let pending = null;
+  let token = 0;
+  const player = {
+    key: '-',
+    real: false,
+    get panos() {
+      return panos;
+    },
+    async show(spot, island, floor) {
+      pending = [spot, island, floor];
+      if (!panos) return;
+      const key = sceneKey(spot, island, floor);
+      if (key === player.key) return;
+      player.key = key;
+      player.real = panos.hasRender(spot, island, floor);
+      onChange(player);
+      const mine = ++token;
+      const texture = await panos.textureFor(spot, island, floor);
+      if (mine === token) viewer.show(texture);
+    },
+  };
+  player.ready = createPanoSet(viewer, options).then((set) => {
+    panos = set;
+    onChange(player);
+    if (pending) player.show(...pending);
+    return set;
+  });
+  return player;
 }

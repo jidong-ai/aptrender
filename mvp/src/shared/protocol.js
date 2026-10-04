@@ -4,10 +4,8 @@
 // 각도 단위는 모두 도(°): yaw -180~180, pitch -90~90(위가 +), fov 10~120. 방향 규칙은 angles.js 참고.
 
 import { clamp, wrapYaw } from './angles.js';
+import { FLOORS, ISLANDS, SPOTS } from './scene.js';
 
-// white = 재질 입히기 전 화이트 매스(테스트용). A·B·C = 재질 조합
-export const PRESETS = ['white', 'A', 'B', 'C'];
-export const LIGHTS = ['day', 'warm3000', 'cool6500'];
 export const PANELS = [null, 'client', 'detail', 'products', 'ohouse'];
 export const TOOLS = ['pencil', 'highlighter', 'pen'];
 
@@ -21,8 +19,10 @@ export const WS_PATH = '/ws';
 
 export function createInitialState(now = Date.now()) {
   return {
-    preset: 'white', // A/B/C 렌더가 나오면 'A'로 바꾼다
-    light: 'day',
+    // 매니저·고객 자리. 지금은 함께 이동(안 1). 따로 서는 연출(안 2)을 위해 필드만 나눠 둔다
+    spot: { manager: 'v1', customer: 'v1' },
+    island: 'none', // 'none' | '1' | '2' | '3'
+    floor: 'base', // 'base'(기존) | 'a' | 'b' | 'c'
     dims: false,
     strokes: [],
     managerView: { yaw: 0, pitch: 0, fov: 75, aspect: 1.43 }, // fov = 태블릿 세로 시야각, aspect = 태블릿 화면비
@@ -38,8 +38,14 @@ const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
 const PATCH_RULES = {
-  preset: (v) => (PRESETS.includes(v) ? v : INVALID),
-  light: (v) => (LIGHTS.includes(v) ? v : INVALID),
+  island: (v) => (ISLANDS.includes(v) ? v : INVALID),
+  floor: (v) => (FLOORS.includes(v) ? v : INVALID),
+  spot: (v) => {
+    if (!isObject(v)) return INVALID;
+    const out = {};
+    for (const who of ['manager', 'customer']) if (SPOTS.includes(v[who])) out[who] = v[who];
+    return Object.keys(out).length ? out : INVALID;
+  },
   dims: (v) => (typeof v === 'boolean' ? v : INVALID),
   panel: (v) => (PANELS.includes(v) ? v : INVALID),
   recStartedAt: (v) => (isNum(v) ? v : INVALID),
@@ -87,7 +93,9 @@ export function sanitizeStroke(s) {
   if (typeof s.color !== 'string' || s.color.length > 32) return null;
   const pts = sanitizePts(s.pts ?? []);
   if (!pts) return null;
-  return { id: s.id, tool: s.tool, width: s.width, color: s.color, pts };
+  const spot = s.spot ?? 'v1'; // 주석은 그린 시점에서만 같은 자리에 맞는다
+  if (!SPOTS.includes(spot)) return null;
+  return { id: s.id, tool: s.tool, width: s.width, color: s.color, spot, pts };
 }
 
 // 검증이 끝난 변경 메시지를 state에 반영한다(state를 직접 수정).
@@ -96,7 +104,7 @@ export function applyChange(state, msg) {
   switch (msg.type) {
     case 'patch': {
       for (const [key, value] of Object.entries(msg.patch)) {
-        if (key === 'managerView' || key === 'call') Object.assign(state[key], value);
+        if (key === 'managerView' || key === 'call' || key === 'spot') Object.assign(state[key], value);
         else state[key] = value;
       }
       return true;

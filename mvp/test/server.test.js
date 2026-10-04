@@ -41,7 +41,9 @@ test('접속하면 hello와 전체 스냅샷을 받는다', async () => {
   const hello = await xr.next('hello');
   assert.equal(hello.role, 'xr');
   const snap = await xr.next('snapshot');
-  assert.equal(snap.state.preset, 'white');
+  assert.equal(snap.state.island, 'none');
+  assert.equal(snap.state.floor, 'base');
+  assert.deepEqual(snap.state.spot, { manager: 'v1', customer: 'v1' });
   assert.deepEqual(snap.state.strokes, []);
   await xr.close();
 });
@@ -51,10 +53,10 @@ test('태블릿의 patch가 XR에 중계된다', async () => {
   const xr = connect('xr');
   await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
 
-  tablet.send({ type: 'patch', patch: { preset: 'B' } });
+  tablet.send({ type: 'patch', patch: { island: '2' } });
   const msg = await xr.next('patch');
-  assert.deepEqual(msg.patch, { preset: 'B' });
-  assert.equal(server.getState().preset, 'B');
+  assert.deepEqual(msg.patch, { island: '2' });
+  assert.equal(server.getState().island, '2');
 
   await Promise.all([tablet.close(), xr.close()]);
 });
@@ -62,11 +64,11 @@ test('태블릿의 patch가 XR에 중계된다', async () => {
 test('허용되지 않은 값은 반영하지 않고 error로 알린다', async () => {
   const tablet = connect('tablet');
   const { state } = await tablet.next('snapshot');
-  tablet.send({ type: 'patch', patch: { preset: 'Z', strokes: [] } });
+  tablet.send({ type: 'patch', patch: { floor: 'z', strokes: [] } });
   const err = await tablet.next('error');
-  assert.match(err.message, /preset/);
+  assert.match(err.message, /floor/);
   assert.match(err.message, /strokes/);
-  assert.equal(server.getState().preset, state.preset);
+  assert.equal(server.getState().floor, state.floor);
   await tablet.close();
 });
 
@@ -74,17 +76,18 @@ test('끊긴 동안 바뀐 상태를 재접속 스냅샷으로 받는다', async
   const tablet = connect('tablet');
   let xr = connect('xr');
   await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
-  tablet.send({ type: 'patch', patch: { preset: 'A' } });
+  tablet.send({ type: 'patch', patch: { island: '1' } });
   await xr.next('patch');
 
   await xr.close(); // XR 끊김
-  tablet.send({ type: 'patch', patch: { preset: 'C', light: 'warm3000' } });
-  await tablet.next('patch', (m) => m.patch.preset === 'C');
+  tablet.send({ type: 'patch', patch: { island: '3', floor: 'b', spot: { manager: 'v2', customer: 'v2' } } });
+  await tablet.next('patch', (m) => m.patch.island === '3');
 
   xr = connect('xr'); // XR 재접속
   const snap = await xr.next('snapshot');
-  assert.equal(snap.state.preset, 'C');
-  assert.equal(snap.state.light, 'warm3000');
+  assert.equal(snap.state.island, '3');
+  assert.equal(snap.state.floor, 'b');
+  assert.deepEqual(snap.state.spot, { manager: 'v2', customer: 'v2' });
 
   await Promise.all([tablet.close(), xr.close()]);
 });
@@ -96,7 +99,7 @@ test('주석 stroke 시작·추가·종료·삭제가 상태와 중계에 반영
 
   const stroke = { id: 't-1', tool: 'pen', width: 2, color: '#ff3b30', pts: [[10, 5]] };
   tablet.send({ type: 'stroke:start', stroke });
-  assert.deepEqual((await xr.next('stroke:start')).stroke, stroke);
+  assert.deepEqual((await xr.next('stroke:start')).stroke, { ...stroke, spot: 'v1' }); // spot 생략 시 v1
 
   tablet.send({ type: 'stroke:append', id: 't-1', pts: [[11, 5], [12, 6]] });
   await xr.next('stroke:append');
@@ -115,12 +118,12 @@ test('reset은 모든 화면에 초기 상태 스냅샷을 보낸다', async () 
   const tablet = connect('tablet');
   const xr = connect('xr');
   await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
-  tablet.send({ type: 'patch', patch: { preset: 'B', dims: true } });
+  tablet.send({ type: 'patch', patch: { island: '2', dims: true } });
   await xr.next('patch');
 
   tablet.send({ type: 'reset' });
   const snap = await xr.next('snapshot', (m) => m.reason === 'reset');
-  assert.equal(snap.state.preset, 'white');
+  assert.equal(snap.state.island, 'none');
   assert.equal(snap.state.dims, false);
 
   await Promise.all([tablet.close(), xr.close()]);
@@ -150,7 +153,20 @@ test('managerView는 부분 갱신되고 범위를 벗어난 값은 보정된다
 
 test('파노라마 목록: assets/pano의 파일을 이름 규칙으로 찾는다', async () => {
   const panos = listPanos();
-  assert.equal(panos.white_day?.['4k'], '/assets/pano/white_day_4K.png');
+  // 화이트 매스 테스트 렌더는 'V1 · 아일랜드 없음 · 기존 바닥' 별칭으로 인식
+  assert.equal(panos.v1_none_base?.['4k'], '/assets/pano/white_day_4K.png');
   const res = await fetch(`http://localhost:${server.port}/api/panos`);
   assert.deepEqual((await res.json()).panos, panos);
+});
+
+test('spot은 매니저·고객을 따로 갱신할 수 있고, 잘못된 시점은 거부된다', async () => {
+  const tablet = connect('tablet');
+  const xr = connect('xr');
+  await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
+  tablet.send({ type: 'patch', patch: { spot: { customer: 'v3' } } });
+  await xr.next('patch', (m) => m.patch.spot);
+  assert.equal(server.getState().spot.customer, 'v3');
+  tablet.send({ type: 'patch', patch: { spot: { manager: 'v9' } } });
+  assert.match((await tablet.next('error')).message, /spot/);
+  await Promise.all([tablet.close(), xr.close()]);
 });

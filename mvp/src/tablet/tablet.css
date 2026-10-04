@@ -21,68 +21,78 @@
 .toolbar {
   position: fixed;
   left: 50%;
-  bottom: calc(16px + env(safe-area-inset-bottom));
+  bottom: calc(14px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 10px;
+  gap: 14px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 10px;
   border-radius: 14px;
   background: rgb(30 30 30 / 0.72);
 }
 
-.presets,
-.debug {
+.group {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
 }
 
-.toolbar button {
+.group + .group {
+  padding-left: 14px;
+  border-left: 1px solid rgb(255 255 255 / 0.15);
+}
+
+.group-label {
+  margin-right: 2px;
+  color: #bbb;
+  font-size: 13px;
   white-space: nowrap;
 }
 
-.presets button {
-  min-width: 72px;
-  height: 56px;
-  padding: 0 14px;
+.toolbar button,
+.debug button {
+  white-space: nowrap;
+}
+
+.toolbar button {
+  min-width: 52px;
+  height: 52px;
+  padding: 0 12px;
   border: 2px solid transparent;
   border-radius: 10px;
   background: #c4c4c4;
   color: #333;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
 }
 
-.presets button[aria-pressed='true'] {
+.toolbar button[aria-pressed='true'] {
   background: #6e6e6e;
   color: #fff;
 }
 
-/* 아직 렌더가 없는 조합(테스트 격자로 보임) */
-.presets button.no-render {
+.toolbar button:disabled {
+  opacity: 0.3;
+}
+
+/* 아직 렌더가 없는 조합(누르면 테스트 격자로 보임) */
+.toolbar button.no-render {
   border-style: dashed;
   border-color: #888;
 }
 
-.debug button {
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid #555;
-  border-radius: 8px;
-  background: #2c2c2c;
-  color: #bbb;
-  font-size: 14px;
-}
-
-.debug button[aria-pressed='true'] {
-  background: #555;
-  color: #fff;
-}
-
-.readout {
+.corner {
   position: fixed;
   top: calc(12px + env(safe-area-inset-top));
   right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.readout {
   padding: 6px 10px;
   border-radius: 6px;
   background: rgb(0 0 0 / 0.5);
@@ -91,7 +101,27 @@
   pointer-events: none;
 }
 
+.debug {
+  display: flex;
+  gap: 6px;
+}
+
+.debug button {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: rgb(44 44 44 / 0.85);
+  color: #bbb;
+  font-size: 13px;
+}
+
+.debug button[aria-pressed='true'] {
+  background: #555;
+  color: #fff;
+}
+
 /* 연결이 끊긴 동안은 눌러도 반영되지 않으므로 흐리게 */
-.is-offline .presets button {
+.is-offline .toolbar button {
   opacity: 0.35;
 }

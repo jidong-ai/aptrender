@@ -120,7 +120,7 @@ export function createSync({ role }) {
         log(
           msg.reason === 'reset'
             ? `리셋 → 초기 상태 수신 (rev ${msg.rev})`
-            : `스냅샷 ${info.snapshots}번째 수신 · preset ${state.preset} (rev ${msg.rev})`,
+            : `스냅샷 ${info.snapshots}번째 수신 · 상태 복구 (rev ${msg.rev})`,
         );
         emit('snapshot', state, msg);
         emit('state', state, msg);

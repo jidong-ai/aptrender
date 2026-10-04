@@ -70,7 +70,7 @@ export function makeTestPano({ width = 4096, tint = '#d8d8d8', label = '', trans
     }
   }
   if (label) {
-    for (const yaw of [-135, -45, 45, 135]) text(label, X(yaw), Y(15), px * 4.5);
+    for (const yaw of [-135, -45, 45, 135]) text(label, X(yaw), Y(15), px * 2.6);
   }
   return canvas;
 }

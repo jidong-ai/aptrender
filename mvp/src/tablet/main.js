@@ -4,38 +4,27 @@ import { createSync } from '../shared/sync.js';
 import { mountHud } from '../shared/hud.js';
 import { PanoViewer } from '../shared/pano-viewer.js';
 import { attachLookControls } from '../shared/look-controls.js';
-import { createPanoSet } from '../shared/pano-set.js';
+import { createScenePlayer } from '../shared/pano-set.js';
+import { describeScene } from '../shared/scene.js';
 
 const VIEW_SEND_MS = 100; // managerView 10Hz
 
 const viewer = new PanoViewer(document.getElementById('view'), { fov: { v: 75 }, fovRange: [35, 100] });
 const sync = createSync({ role: 'tablet' });
-let current = { key: '-', real: false };
+let latest = null;
+let scene = null;
 const hud = mountHud(sync, {
   role: 'tablet',
-  extra: () => [`장면: ${current.key} · ${current.real ? '렌더' : '테스트 격자'}`],
+  extra: () => (latest && scene ? [`장면: ${describeScene(latest.spot.manager, latest.island, latest.floor)} · ${scene.real ? '렌더' : '테스트 격자'}`] : []),
 });
-
-// ---------- 파노라마 ----------
-let panos = null;
-let latest = null;
-let showToken = 0;
-
-async function showPano(state) {
-  if (!panos) return;
-  const key = `${state.preset}_${state.light}`;
-  if (key === current.key) return;
-  current = { key, real: panos.hasRender(state.preset, state.light) };
-  hud.render();
-  const token = ++showToken;
-  const texture = await panos.textureFor(state.preset, state.light);
-  if (token === showToken) viewer.show(texture);
-}
-
-createPanoSet(viewer, { size: '4k', maxWidth: 4096, log: hud.log }).then((set) => {
-  panos = set;
-  markRenders();
-  if (latest) showPano(latest);
+scene = createScenePlayer(viewer, {
+  size: '4k',
+  maxWidth: 4096,
+  log: hud.log,
+  onChange: () => {
+    hud.render();
+    if (latest) render(latest);
+  },
 });
 
 // ---------- 시점 공유 (10Hz) ----------
@@ -66,47 +55,65 @@ function queueView() {
 attachLookControls(viewer, { onChange: queueView });
 viewer.onResize(() => queueView()); // 화면 회전 등으로 화면비가 바뀌면 XR 프레임도 갱신
 
-// ---------- 서버 상태 반영 ----------
-const presetButtons = [...document.querySelectorAll('[data-preset]')];
+// ---------- 옵션 버튼 ----------
+const buttons = {
+  spot: [...document.querySelectorAll('[data-spot]')],
+  island: [...document.querySelectorAll('[data-island]')],
+  floor: [...document.querySelectorAll('[data-floor]')],
+};
 
-function markRenders() {
-  for (const btn of presetButtons) btn.classList.toggle('no-render', !panos.hasRender(btn.dataset.preset, latest?.light ?? 'day'));
+// 시점은 매니저·고객이 함께 이동(안 1). 아일랜드·바닥재는 장면 전체에 적용
+for (const btn of buttons.spot) btn.addEventListener('click', () => sync.patch({ spot: { manager: btn.dataset.spot, customer: btn.dataset.spot } }));
+for (const btn of buttons.island) {
+  // 아일랜드를 치우면 바닥재도 기존으로 되돌린다(아일랜드 없는 바닥재 조합은 렌더하지 않음)
+  btn.addEventListener('click', () => sync.patch(btn.dataset.island === 'none' ? { island: 'none', floor: 'base' } : { island: btn.dataset.island }));
+}
+for (const btn of buttons.floor) btn.addEventListener('click', () => sync.patch({ floor: btn.dataset.floor }));
+
+// 버튼 표시는 서버가 확정한 상태로만 그린다(서버가 단일 진실)
+function render(state) {
+  const spot = state.spot.manager;
+  const press = (list, attr, value) => list.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset[attr] === value)));
+  press(buttons.spot, 'spot', spot);
+  press(buttons.island, 'island', state.island);
+  press(buttons.floor, 'floor', state.floor);
+  // 체험 순서: 아일랜드를 먼저 놓아야 바닥재를 고를 수 있다(렌더 장수도 줄어든다)
+  for (const b of buttons.floor) b.disabled = state.island === 'none' && b.dataset.floor !== 'base';
+
+  // 점선 테두리 = 이 버튼을 누르면 렌더가 없어 테스트 격자가 보임
+  const panos = scene.panos;
+  if (!panos) return;
+  for (const b of buttons.spot) b.classList.toggle('no-render', !panos.hasRender(b.dataset.spot, state.island, state.floor));
+  for (const b of buttons.island) b.classList.toggle('no-render', !panos.hasRender(spot, b.dataset.island, state.floor));
+  for (const b of buttons.floor) b.classList.toggle('no-render', !panos.hasRender(spot, state.island, b.dataset.floor));
 }
 
+// ---------- 서버 상태 반영 ----------
 let firstSnapshot = true;
 sync.on('snapshot', (state, msg) => {
   // 처음 접속·리셋: 서버에 저장된 시점으로 맞춘다 / 재접속: 내 시점을 다시 알려준다
-  if (firstSnapshot || msg.reason === 'reset') {
-    viewer.setView(state.managerView);
-    lastSent = '';
-    firstSnapshot = false;
-  } else {
-    lastSent = '';
-    queueView();
-  }
+  if (firstSnapshot || msg.reason === 'reset') viewer.setView(state.managerView);
+  firstSnapshot = false;
+  lastSent = '';
+  queueView();
 });
 
 sync.on('state', (state) => {
   latest = state;
-  for (const btn of presetButtons) btn.setAttribute('aria-pressed', String(btn.dataset.preset === state.preset));
-  if (panos) markRenders();
-  showPano(state);
+  render(state);
+  scene.show(state.spot.manager, state.island, state.floor);
 });
 
 sync.on('info', ({ status }) => {
   document.body.classList.toggle('is-offline', status !== 'online');
 });
 
-for (const btn of presetButtons) {
-  btn.addEventListener('click', () => sync.patch({ preset: btn.dataset.preset }));
-}
-
 // ---------- 디버그 ----------
 const gridBtn = document.getElementById('grid');
 gridBtn.addEventListener('click', () => {
   const on = gridBtn.getAttribute('aria-pressed') !== 'true';
   gridBtn.setAttribute('aria-pressed', String(on));
-  viewer.setOverlay(on && panos ? panos.gridOverlay() : null);
+  viewer.setOverlay(on && scene.panos ? scene.panos.gridOverlay() : null);
 });
 document.getElementById('drop').addEventListener('click', () => sync.simulateDrop(5000));
 document.getElementById('reset').addEventListener('click', () => sync.reset());

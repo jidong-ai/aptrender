@@ -5,8 +5,6 @@ import { fileURLToPath } from 'node:url';
 import sirv from 'sirv';
 import { WebSocketServer } from 'ws';
 import {
-  LIGHTS,
-  PRESETS,
   WS_PATH,
   applyChange,
   createInitialState,
@@ -14,30 +12,32 @@ import {
   sanitizePts,
   sanitizeStroke,
 } from '../src/shared/protocol.js';
+import { parsePanoFile } from '../src/shared/scene.js';
 import { getLanAddresses } from './lan.js';
 
 export const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DIST = path.join(ROOT, 'dist');
 const ASSETS = path.join(ROOT, 'assets');
 const PANO_DIR = path.join(ASSETS, 'pano');
-const PANO_FILE = /^([a-z]+)_([a-z0-9]+)_(4k|8k)\.(jpe?g|png|webp)$/i;
 
-// assets/pano 폴더를 훑어 실제로 있는 파노라마 목록을 만든다.
-// 이름의 대소문자·확장자(jpg/png/webp)는 너그럽게 받는다. 예: white_day_4K.png
+// assets/pano 폴더를 훑어 실제로 있는 파노라마 목록을 만든다. 이름 규칙은 src/shared/scene.js
+// 정식 이름 파일이 있으면 임시 별칭(white_day_4K.png)보다 우선한다.
 export function listPanos() {
   const panos = {};
+  const legacy = new Set();
   let files = [];
   try {
     files = fs.readdirSync(PANO_DIR);
   } catch {}
   for (const file of files.sort()) {
-    const m = PANO_FILE.exec(file);
-    if (!m) continue;
-    const preset = PRESETS.find((p) => p.toLowerCase() === m[1].toLowerCase());
-    const light = LIGHTS.find((l) => l === m[2].toLowerCase());
-    if (!preset || !light) continue;
-    const key = `${preset}_${light}`;
-    (panos[key] ??= {})[m[3].toLowerCase()] = `/assets/pano/${encodeURIComponent(file)}`;
+    const parsed = parsePanoFile(file);
+    if (!parsed) continue;
+    const entry = (panos[parsed.key] ??= {});
+    const slot = `${parsed.key}/${parsed.size}`;
+    if (entry[parsed.size] && !legacy.has(slot)) continue;
+    if (parsed.legacy) legacy.add(slot);
+    else legacy.delete(slot);
+    entry[parsed.size] = `/assets/pano/${encodeURIComponent(file)}`;
   }
   return panos;
 }

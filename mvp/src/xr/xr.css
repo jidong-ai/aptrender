@@ -88,3 +88,34 @@
 [hidden] {
   display: none !important;
 }
+
+/* ---------- 변경 알림 칩 (D6 Figma 전 임시 스타일, 1920×1080 무대 좌표) ---------- */
+.change-chip {
+  position: absolute;
+  left: 50%;
+  top: 190px; /* 위쪽 가장자리의 매니저 시선 화살표·라벨과 겹치지 않게 */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  background: rgb(20 20 20 / 0.62);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -12px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.change-chip span {
+  font-size: 22px;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.7);
+}
+
+.change-chip.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
