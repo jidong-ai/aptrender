@@ -14,7 +14,7 @@ test('파노라마 파일 이름 → 장면 키', () => {
 test('D5 이름 그대로 쓰는 별칭', () => {
   assert.deepEqual(parsePanoFile('pano_front.png'), { key: 'v1_none_base', size: '8k' });
   assert.deepEqual(parsePanoFile('Pano_Side.JPG'), { key: 'v2_none_base', size: '8k' });
-  assert.deepEqual(parsePanoFile('island_a_4k.jpg'), { key: 'v1_2_base', size: '4k' });
+  assert.deepEqual(parsePanoFile('island_a_4k.jpg'), { key: 'v2_2_base', size: '4k' });
 });
 
 test('장면 설명 문구', () => {

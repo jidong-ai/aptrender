@@ -22,7 +22,7 @@ D5에서 렌더한 360° equirectangular 이미지를 이 폴더에 넣는다. �
 - 크기 표시(`_8k`)를 안 붙인 파일은 8K로 본다.
 - **이 폴더의 이미지는 git에 올라가지 않는다**(용량). 서버를 돌릴 컴퓨터에 직접 복사한다.
 - 인식된 파일 목록: `http://localhost:3000/api/panos`. 없는 조합은 화면에 테스트 격자(장면 이름 표시)로 보인다.
-- D5 이름 그대로 쓰는 별칭(`src/shared/scene.js`의 `ALIASES`): `pano_front` = 정면·옵션 전, `pano_side` = 측면·옵션 전, `island_a` = 정면·아일랜드 2·기존 바닥
+- D5 이름 그대로 쓰는 별칭(`src/shared/scene.js`의 `ALIASES`): `pano_front` = 정면·옵션 전, `pano_side` = 측면·옵션 전, `island_a` = 측면·아일랜드 2·기존 바닥
 
 ## 렌더 목록
 

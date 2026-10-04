@@ -36,7 +36,7 @@ const FILE = /^(v[1-9])_island([0-3])_floor([0abc])$/i;
 export const ALIASES = {
   pano_front: 'v1_none_base', // 정면 · 옵션 적용 전
   pano_side: 'v2_none_base', // 측면 · 옵션 적용 전
-  island_a: 'v1_2_base', // 정면 · 아일랜드 배치(시나리오의 '아일랜드 2') · 바닥재 변경 전
+  island_a: 'v2_2_base', // 측면 · 아일랜드 배치(시나리오의 '아일랜드 2') · 바닥재 변경 전
 };
 
 const NAME = /^(.+?)(?:_(4k|8k))?\.(jpe?g|png|webp)$/i;
