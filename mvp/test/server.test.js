@@ -1,7 +1,7 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import WebSocket from 'ws';
-import { startServer } from '../server/app.js';
+import { listPanos, startServer } from '../server/app.js';
 
 let server;
 before(async () => {
@@ -41,7 +41,7 @@ test('접속하면 hello와 전체 스냅샷을 받는다', async () => {
   const hello = await xr.next('hello');
   assert.equal(hello.role, 'xr');
   const snap = await xr.next('snapshot');
-  assert.equal(snap.state.preset, 'A');
+  assert.equal(snap.state.preset, 'white');
   assert.deepEqual(snap.state.strokes, []);
   await xr.close();
 });
@@ -120,7 +120,7 @@ test('reset은 모든 화면에 초기 상태 스냅샷을 보낸다', async () 
 
   tablet.send({ type: 'reset' });
   const snap = await xr.next('snapshot', (m) => m.reason === 'reset');
-  assert.equal(snap.state.preset, 'A');
+  assert.equal(snap.state.preset, 'white');
   assert.equal(snap.state.dims, false);
 
   await Promise.all([tablet.close(), xr.close()]);
@@ -135,4 +135,22 @@ test('접속 기기 수(peers)를 알려준다', async () => {
   await xr.close();
   await tablet.next('peers', (m) => m.peers.xr === 0);
   await tablet.close();
+});
+
+test('managerView는 부분 갱신되고 범위를 벗어난 값은 보정된다', async () => {
+  const tablet = connect('tablet');
+  const xr = connect('xr');
+  await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
+  tablet.send({ type: 'patch', patch: { managerView: { yaw: 190, pitch: 120, aspect: 1.5 } } });
+  const msg = await xr.next('patch', (m) => m.patch.managerView);
+  assert.deepEqual(msg.patch.managerView, { yaw: -170, pitch: 90, aspect: 1.5 });
+  assert.equal(server.getState().managerView.fov, 75); // 안 보낸 값은 유지
+  await Promise.all([tablet.close(), xr.close()]);
+});
+
+test('파노라마 목록: assets/pano의 파일을 이름 규칙으로 찾는다', async () => {
+  const panos = listPanos();
+  assert.equal(panos.white_day?.['4k'], '/assets/pano/white_day_4K.png');
+  const res = await fetch(`http://localhost:${server.port}/api/panos`);
+  assert.deepEqual((await res.json()).panos, panos);
 });

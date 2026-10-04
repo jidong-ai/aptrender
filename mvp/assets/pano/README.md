@@ -5,18 +5,21 @@ D5에서 렌더한 360° equirectangular JPG를 이 폴더에 넣는다. 서버�
 ## 파일 이름 규칙
 
 ```
-{preset}_{light}_{size}.jpg
+{preset}_{light}_{size}.jpg   (png·webp도 가능, 대소문자 무관: white_day_4K.png 도 인식)
 ```
 
 | 자리 | 값 | 뜻 |
 |---|---|---|
-| preset | `A` `B` `C` | 재질 조합 |
+| preset | `white` `A` `B` `C` | white = 재질 전 화이트 매스(테스트), A·B·C = 재질 조합 |
 | light | `day` `warm3000` `cool6500` | 주광 / 전구색 3000K / 주광색 6500K |
 | size | `4k` `8k` | 4k = 4096×2048 (아이패드용), 8k = 8192×4096 (아이맥용) |
 
 예: `A_day_4k.jpg`, `B_warm3000_8k.jpg`
 
 조합 3 × 조도 3 × 크기 2 = **18장**. 브라우저 주소는 `/assets/pano/A_day_4k.jpg`.
+지금 어떤 파일이 인식됐는지는 `http://localhost:3000/api/panos`에서 볼 수 있다. 없는 조합은 화면에 테스트 격자로 보인다.
+
+용량: 같은 화질이면 JPG(품질 90 안팎)가 PNG보다 훨씬 작아 불러오기가 빠르다. 전시용 최종본은 JPG를 권장한다.
 
 ## 체크
 

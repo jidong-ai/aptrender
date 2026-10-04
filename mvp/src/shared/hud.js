@@ -8,18 +8,19 @@ const STATUS_TEXT = {
 
 const clock = () => new Date().toTimeString().slice(0, 8); // HH:MM:SS
 
-export function mountHud(sync, { role, hints = '' } = {}) {
+export function mountHud(sync, { role, hints = '', extra = () => [] } = {}) {
   const el = document.createElement('div');
   el.className = 'hud';
   el.hidden = new URLSearchParams(location.search).get('hud') === '0';
   document.body.append(el);
 
   const logs = [];
-  sync.on('log', (text) => {
+  const addLog = (text) => {
     logs.unshift(`${clock()}  ${text}`);
-    logs.length = Math.min(logs.length, 5);
+    logs.length = Math.min(logs.length, 6);
     render();
-  });
+  };
+  sync.on('log', addLog);
   sync.on('info', render);
 
   function render() {
@@ -34,6 +35,7 @@ export function mountHud(sync, { role, hints = '' } = {}) {
       online ? `접속 중: 태블릿 ${peers.tablet ?? 0} · XR ${peers.xr ?? 0}` : '접속 중: 알 수 없음 (서버와 끊김)',
     ];
     if (role === 'xr' && sync.info.tabletUrl) lines.push(`아이패드 주소: ${sync.info.tabletUrl}`);
+    lines.push(...extra());
     if (hints) lines.push(hints);
 
     el.dataset.status = status;
@@ -50,6 +52,8 @@ export function mountHud(sync, { role, hints = '' } = {}) {
 
   return {
     el,
+    log: addLog,
+    render,
     toggle() {
       el.hidden = !el.hidden;
       return !el.hidden;

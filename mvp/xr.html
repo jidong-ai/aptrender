@@ -6,10 +6,12 @@
     <title>Weave · XR 뷰</title>
   </head>
   <body class="xr">
-    <!-- 1920×1080 기준 무대. 화면 비율이 달라도(맥북 16:10) 같은 구도로 축소·중앙 배치 -->
-    <div class="stage" id="stage">
-      <div class="preset-label" id="presetLabel">…</div>
-    </div>
+    <!-- ① 공간: 파노라마는 화면 전체를 채운다 -->
+    <div class="view" id="view"></div>
+    <!-- ③ 매니저 시선 라벨·화살표 (화면 좌표) -->
+    <div class="mgr-layer" id="mgrLayer"></div>
+    <!-- ②④ UI 레이어용 1920×1080 무대. 화면 비율이 달라도(맥북 16:10) 같은 구도로 축소·중앙 배치 (D3~) -->
+    <div class="stage" id="stage"></div>
     <script type="module" src="/src/xr/main.js"></script>
   </body>
 </html>

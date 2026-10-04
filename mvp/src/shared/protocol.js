@@ -1,9 +1,12 @@
 // 서버와 두 화면(/tablet, /xr)이 함께 쓰는 상태 정의와 갱신 규칙.
 // 서버는 sanitize*로 입력을 검증한 뒤 applyChange로 반영하고,
 // 클라이언트는 서버가 보낸 메시지를 같은 applyChange로 반영한다.
-// 각도 단위는 모두 도(°): yaw -180~180, pitch -90~90(위가 +), fov 10~120.
+// 각도 단위는 모두 도(°): yaw -180~180, pitch -90~90(위가 +), fov 10~120. 방향 규칙은 angles.js 참고.
 
-export const PRESETS = ['A', 'B', 'C'];
+import { clamp, wrapYaw } from './angles.js';
+
+// white = 재질 입히기 전 화이트 매스(테스트용). A·B·C = 재질 조합
+export const PRESETS = ['white', 'A', 'B', 'C'];
 export const LIGHTS = ['day', 'warm3000', 'cool6500'];
 export const PANELS = [null, 'client', 'detail', 'products', 'ohouse'];
 export const TOOLS = ['pencil', 'highlighter', 'pen'];
@@ -18,11 +21,11 @@ export const WS_PATH = '/ws';
 
 export function createInitialState(now = Date.now()) {
   return {
-    preset: 'A',
+    preset: 'white', // A/B/C 렌더가 나오면 'A'로 바꾼다
     light: 'day',
     dims: false,
     strokes: [],
-    managerView: { yaw: 0, pitch: 0, fov: 75 },
+    managerView: { yaw: 0, pitch: 0, fov: 75, aspect: 1.43 }, // fov = 태블릿 세로 시야각, aspect = 태블릿 화면비
     panel: null,
     call: { active: false },
     recStartedAt: now,
@@ -33,8 +36,6 @@ const INVALID = Symbol('invalid');
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-const wrapYaw = (v) => ((((v + 180) % 360) + 360) % 360) - 180;
 
 const PATCH_RULES = {
   preset: (v) => (PRESETS.includes(v) ? v : INVALID),
@@ -49,6 +50,7 @@ const PATCH_RULES = {
     if (isNum(v.yaw)) out.yaw = wrapYaw(v.yaw);
     if (isNum(v.pitch)) out.pitch = clamp(v.pitch, -90, 90);
     if (isNum(v.fov)) out.fov = clamp(v.fov, 10, 120);
+    if (isNum(v.aspect)) out.aspect = clamp(v.aspect, 0.3, 4);
     return Object.keys(out).length ? out : INVALID;
   },
 };
