@@ -95,8 +95,13 @@ export function createSync({ role }) {
 
   function startPing() {
     clearInterval(pingTimer);
+    let lastTick = Date.now();
     const tick = () => {
-      if (Date.now() - lastPong > PONG_TIMEOUT_MS) return drop('서버 응답 없음');
+      const now = Date.now();
+      // 8K 파노라마 디코딩 등으로 페이지 자체가 멈췄던 경우엔 응답이 늦은 게 서버 탓이 아니다 → 다시 기다린다
+      if (now - lastTick > PING_MS * 2) lastPong = now;
+      lastTick = now;
+      if (now - lastPong > PONG_TIMEOUT_MS) return drop('서버 응답 없음');
       ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: 'ping', t: performance.now() }));
     };
     pingTimer = setInterval(tick, PING_MS);

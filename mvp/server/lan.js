@@ -1,8 +1,8 @@
 import os from 'node:os';
 
 // 가상·터널 인터페이스는 아이패드가 닿을 수 없으므로 뒤로 미루거나 뺀다.
-const IGNORED = /^(lo|docker|br-|veth|vmnet|vboxnet|utun|awdl|llw|bridge|gif|stf|anpi|ap\d|tailscale|zt)/i;
-const PREFERRED = /^(en|eth|wlan|wl)/i;
+const IGNORED = /^(lo|docker|br-|veth|vmnet|vboxnet|utun|awdl|llw|bridge|gif|stf|anpi|ap\d|tailscale|zt|vethernet|virtualbox|vmware|loopback|bluetooth)/i;
+const PREFERRED = /^(en|eth|wlan|wl|wi-?fi|무선|이더넷)/i; // macOS·리눅스·윈도우(Wi-Fi, 이더넷)
 
 function isPrivate(ip) {
   const [a, b] = ip.split('.').map(Number);

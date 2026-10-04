@@ -57,7 +57,42 @@ npm run dev
 | `npm run dev` | 개발 중. 코드를 고치면 화면이 자동 갱신된다 |
 | `npm start` | 리허설·전시. 빌드한 뒤 실행해서 더 가볍고 안정적이다 |
 | `npm test` | 서버 중계·재접속 자동 테스트 |
-| `npm run pano:4k` | `assets/pano`의 8K 렌더로 아이패드용 4K를 만든다(macOS, 이미 있으면 건너뜀) |
+| `npm run pano:prep` | `assets/pano`의 8K 렌더로 아이패드용 4K JPG와 아이맥용 8K JPG를 만든다(윈도우·맥, 이미 있으면 건너뜀) |
+
+## 2-1. 렌더 이미지 넣기 (git에 올리지 않음)
+
+파노라마는 용량이 커서 GitHub에 올리지 않는다(웹 업로드는 파일당 25MB 제한). **서버를 돌릴 컴퓨터의 `mvp/assets/pano` 폴더에 직접 복사**한다. 윈도우에서 맥으로 옮길 때는 USB나 구글 드라이브를 쓴다.
+
+1. D5에서 뽑은 파일을 `mvp/assets/pano`에 복사(이름 규칙: `assets/pano/README.md`)
+2. 터미널에서 `npm run pano:prep` → 아이패드용 4K, 아이맥용 8K JPG가 자동으로 생긴다
+3. `npm run dev`. 이미 켜 둔 상태면 두 화면만 새로고침
+
+지금 연결된 D5 파일 이름(그대로 넣으면 됨):
+
+| 파일 | 장면 |
+|---|---|
+| `pano_front.png` | 정면 · 아일랜드 없음 · 기존 바닥 |
+| `pano_side.png` | 측면 · 아일랜드 없음 · 기존 바닥 |
+| `island_a.png` | 정면 · 아일랜드 2 배치 · 기존 바닥 |
+
+확장자는 jpg·png 상관없다. 새 이름을 쓰고 싶으면 `src/shared/scene.js`의 `ALIASES`에 한 줄 추가한다.
+
+## 2-2. 윈도우 PC에서 실행하기
+
+렌더 PC(윈도우)에서 바로 서버를 돌려도 된다. 아이패드와 같은 와이파이에 연결돼 있어야 한다.
+
+1. [nodejs.org](https://nodejs.org)에서 **LTS** 설치, [git-scm.com](https://git-scm.com)에서 Git 설치
+2. 시작 메뉴 → "PowerShell" 실행 후:
+
+   ```powershell
+   cd $HOME\Desktop
+   git clone -b claude/gifted-gauss-n8os27 https://github.com/jidong-ai/aptrender.git aptrender-git
+   cd aptrender-git\mvp
+   npm install
+   ```
+3. 렌더 파일을 `aptrender-git\mvp\assets\pano`에 복사 → `npm run pano:prep` → `npm run dev`
+4. 처음 실행할 때 "Windows 보안 경고(방화벽)" 창이 뜨면 **개인 네트워크에 체크하고 액세스 허용** ⚠️검증 필요(윈도우 버전마다 문구가 다름)
+5. XR 화면: 같은 PC의 Chrome에서 `http://localhost:3000/xr` (전체화면 F키)
 
 ## 3. XR 화면 열기 (맥북 / 아이맥)
 
@@ -106,7 +141,7 @@ npm run dev
 
 | 초 | 관람객(태블릿) | XR 화면에 보이는 것 | 바뀌는 상태 |
 |---|---|---|---|
-| 0–10 | 둘러보기(드래그·핀치), 필요하면 시점 V2·V3로 이동 | 매니저 시선 테두리가 따라 움직임. 시점을 옮기면 함께 이동 | `managerView`, `spot` |
+| 0–10 | 둘러보기(드래그·핀치), 정면 ↔ 측면 시점 이동 | 매니저 시선 테두리가 따라 움직임. 시점을 옮기면 함께 이동 | `managerView`, `spot` |
 | 10–25 | 아일랜드 1·2·3 중 **2** 배치 | 크로스페이드 + "아일랜드 2 배치 · 매니저가 변경" + 아일랜드 쪽으로 시선 이동 | `island` |
 | 25–35 | 바닥재 A·B·C 중 **B** 선택 | 크로스페이드 + "바닥재 B로 변경" + 바닥 쪽으로 시선 이동 | `floor` |
 | 35–50 | 주석: 아일랜드 위 체크 표시 | 그려지는 과정 그대로 + '매니저' 라벨 (D5) | `strokes` |
@@ -115,6 +150,17 @@ npm run dev
 - 조도 조절은 이 흐름에서 뺐다.
 - 바닥재는 아일랜드를 놓은 뒤에만 고를 수 있다. "없음"을 누르면 바닥도 기존으로 돌아간다. 렌더 장수를 줄이기 위한 규칙이다.
 - 시점은 매니저·고객이 **함께 이동**한다(안 1). 상태에는 `spot.manager`·`spot.customer`가 나뉘어 있어서, 나중에 "다른 자리에서 같은 대상 보기"(안 2)로 넓힐 수 있다.
+
+## 5-00. 25초 플로우 테스트 (지금 있는 렌더 3장)
+
+| 초 | 태블릿 | XR에서 확인할 것 |
+|---|---|---|
+| 0–10 | 드래그로 둘러보기 → **측면** → 다시 **정면** | 두 화면이 함께 시점을 옮기고 "측면으로 이동" 알림. 매니저 시선 테두리가 따라옴 |
+| 10–25 | 아일랜드 **2** | 0.8초 크로스페이드로 `island_a`가 나타나고 "아일랜드 2 배치" 알림, 아일랜드 쪽으로 시선 이동 |
+
+- 측면에서 아일랜드를 놓으면 측면 렌더가 아직 없어서 테스트 격자가 보인다(버튼 점선 = 렌더 없음). 시나리오대로 **정면에서** 놓으면 된다.
+- 아일랜드 1·3, 바닥재 A·B·C도 아직 렌더가 없어 격자로 보인다.
+- XR이 돌아보는 방향이 실제 아일랜드와 어긋나면: 태블릿에서 아일랜드를 화면 가운데 두고 오른쪽 위 yaw·pitch를 읽어 `src/shared/scene.js`의 `targets.island`에 넣는다.
 
 ## 5-0. 장면 전환 확인 체크리스트
 
@@ -206,7 +252,7 @@ mvp/
 ├─ assets/
 │  ├─ pano/           파노라마 (이름 규칙: assets/pano/README.md)
 │  └─ ui/             UI 이미지·아이콘 (D4~)
-├─ scripts/make-4k.mjs  8K → 4K 자동 변환 (npm run pano:4k, macOS)
+├─ scripts/prep-pano.mjs  8K 렌더 → 4K·8K JPG 변환 (npm run pano:prep)
 ├─ test/             server.test.js(중계·재접속) · angles.test.js(방향 규칙)
 ├─ index.html  tablet.html  xr.html
 └─ vite.config.js
@@ -220,7 +266,7 @@ mvp/
 
 ```js
 {
-  spot: { manager: "v1"|"v2"|"v3", customer: "v1"|"v2"|"v3" },   // 지금은 함께 이동
+  spot: { manager: "v1"|"v2", customer: "v1"|"v2" },   // v1 정면, v2 측면. 지금은 함께 이동
   island: "none" | "1" | "2" | "3",
   floor: "base" | "a" | "b" | "c",   // base = 기존 바닥
   dims: boolean,
@@ -253,5 +299,5 @@ mvp/
 
 ## 다음 (Day 3)
 
-렌더 트랙: 아일랜드 3종·바닥재 3종 세팅, 시점 V1·V2(·V3) 배치 렌더(8K만, 4K는 `npm run pano:4k`). 렌더 목록은 `assets/pano/README.md`.
+렌더 트랙: 아일랜드 3종·바닥재 3종 세팅, 정면·측면 배치 렌더(8K만, 나머지는 `npm run pano:prep`). 렌더 목록은 `assets/pano/README.md`.
 UI 트랙: Figma로 XR뷰 4레이어(1920×1080)와 하단 메뉴 패널 4개 설계.

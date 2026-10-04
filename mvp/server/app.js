@@ -21,22 +21,18 @@ const ASSETS = path.join(ROOT, 'assets');
 const PANO_DIR = path.join(ASSETS, 'pano');
 
 // assets/pano 폴더를 훑어 실제로 있는 파노라마 목록을 만든다. 이름 규칙은 src/shared/scene.js
-// 정식 이름 파일이 있으면 임시 별칭(white_day_4K.png)보다 우선한다.
-export function listPanos() {
+export function listPanos(dir = PANO_DIR) {
   const panos = {};
-  const legacy = new Set();
   let files = [];
   try {
-    files = fs.readdirSync(PANO_DIR);
+    files = fs.readdirSync(dir);
   } catch {}
   for (const file of files.sort()) {
     const parsed = parsePanoFile(file);
     if (!parsed) continue;
     const entry = (panos[parsed.key] ??= {});
-    const slot = `${parsed.key}/${parsed.size}`;
-    if (entry[parsed.size] && !legacy.has(slot)) continue;
-    if (parsed.legacy) legacy.add(slot);
-    else legacy.delete(slot);
+    // 같은 장면·크기가 둘이면 JPG를 쓴다(PNG보다 가벼움). 예: pano_front.png와 pano_front_8k.jpg
+    if (entry[parsed.size] && !/\.png$/i.test(entry[parsed.size])) continue;
     entry[parsed.size] = `/assets/pano/${encodeURIComponent(file)}`;
   }
   return panos;

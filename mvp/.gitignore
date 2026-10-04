@@ -2,3 +2,7 @@ node_modules/
 dist/
 .DS_Store
 *.log
+
+# 파노라마는 용량이 커서 git에 올리지 않는다(GitHub 웹 업로드 25MB 제한). 각 컴퓨터의 assets/pano에 직접 복사
+assets/pano/*
+!assets/pano/README.md

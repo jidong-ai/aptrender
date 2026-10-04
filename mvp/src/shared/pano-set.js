@@ -56,7 +56,7 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
     while (queue.length) await load(queue.shift());
     running = false;
   }
-  pump();
+  setTimeout(pump, 0); // 화면에 띄울 장면이 먼저 순서를 당길 수 있게 한 박자 늦게 시작
 
   const tests = new Map();
   function testTexture(spot, island, floor) {

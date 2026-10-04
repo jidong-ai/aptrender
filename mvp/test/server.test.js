@@ -1,5 +1,8 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import WebSocket from 'ws';
 import { listPanos, startServer } from '../server/app.js';
 
@@ -151,21 +154,26 @@ test('managerView는 부분 갱신되고 범위를 벗어난 값은 보정된다
   await Promise.all([tablet.close(), xr.close()]);
 });
 
-test('파노라마 목록: assets/pano의 파일을 이름 규칙으로 찾는다', async () => {
-  const panos = listPanos();
-  // 화이트 매스 테스트 렌더는 'V1 · 아일랜드 없음 · 기존 바닥' 별칭으로 인식
-  assert.equal(panos.v1_none_base?.['4k'], '/assets/pano/white_day_4K.png');
+test('파노라마 목록: 폴더의 파일을 이름 규칙·별칭으로 찾는다', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pano-'));
+  for (const f of ['pano_front.png', 'pano_front_8k.jpg', 'pano_side_4k.jpg', 'v2_island1_floora_8k.jpg', 'notes.txt']) fs.writeFileSync(path.join(dir, f), '');
+  assert.deepEqual(listPanos(dir), {
+    v1_none_base: { '8k': '/assets/pano/pano_front_8k.jpg' }, // PNG와 JPG가 같이 있으면 JPG
+    v2_none_base: { '4k': '/assets/pano/pano_side_4k.jpg' },
+    v2_1_a: { '8k': '/assets/pano/v2_island1_floora_8k.jpg' },
+  });
+  fs.rmSync(dir, { recursive: true });
   const res = await fetch(`http://localhost:${server.port}/api/panos`);
-  assert.deepEqual((await res.json()).panos, panos);
+  assert.deepEqual((await res.json()).panos, listPanos());
 });
 
 test('spot은 매니저·고객을 따로 갱신할 수 있고, 잘못된 시점은 거부된다', async () => {
   const tablet = connect('tablet');
   const xr = connect('xr');
   await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
-  tablet.send({ type: 'patch', patch: { spot: { customer: 'v3' } } });
+  tablet.send({ type: 'patch', patch: { spot: { customer: 'v2' } } });
   await xr.next('patch', (m) => m.patch.spot);
-  assert.equal(server.getState().spot.customer, 'v3');
+  assert.equal(server.getState().spot.customer, 'v2');
   tablet.send({ type: 'patch', patch: { spot: { manager: 'v9' } } });
   assert.match((await tablet.next('error')).message, /spot/);
   await Promise.all([tablet.close(), xr.close()]);
