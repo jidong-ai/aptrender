@@ -1,9 +1,10 @@
-// D5 8K 렌더를 화면용으로 준비한다. 윈도우·맥 공통.  실행: npm run pano:prep
-//  1) 아이패드용 4K(4096×2048 JPG)를 만든다
-//  2) 원본이 PNG면 아이맥용 8K JPG도 만든다(PNG보다 가벼워 XR 화면이 덜 멈춘다. 서버는 JPG를 우선 사용)
-//  3) 레이어: "아일랜드 있는 렌더"와 "없는 렌더"를 비교해 바뀐 부분(오브제+그림자)만 투명 PNG처럼 오려낸다.
-//     바닥재도 같은 방식("아일랜드+바닥재" vs "아일랜드+기존 바닥"). 화면은 배경을 고정하고 이 레이어만 겹친다.
-//     결과: assets/pano/layers/*.webp + manifest.json
+// D5 렌더를 화면용으로 준비한다. 윈도우·맥 공통.  실행: npm run pano:prep
+// 결과는 모두 assets/pano/built/ 에 만든다(git에 올리지 않음, 지워도 다시 만들 수 있음)
+//  1) 아이패드용 4K JPG
+//  2) 원본이 PNG면 아이맥용 8K JPG(PNG보다 가벼워 XR 화면이 덜 멈춘다)
+//  3) 오브제·자재 레이어(built/layers/)
+//     - 누끼 파일(이름_cut.png)이 있으면 그걸 그대로 쓴다  ← 기본
+//     - --auto 를 붙이면 누끼가 없는 조합은 "옵션 렌더 − 기본 렌더" 차이로 자동 오려낸다(미리보기용)
 // 이미 만든 파일은 건너뛴다. 다시 만들려면 npm run pano:prep -- --force
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,9 +13,11 @@ import sharp from 'sharp';
 import { FLOORS, ISLANDS, SPOTS, parsePanoFile, sceneKey } from '../src/shared/scene.js';
 
 const DIR = fileURLToPath(new URL('../assets/pano/', import.meta.url));
-const LAYER_DIR = path.join(DIR, 'layers');
+const BUILT = path.join(DIR, 'built');
+const LAYER_DIR = path.join(BUILT, 'layers');
 const MANIFEST = path.join(LAYER_DIR, 'manifest.json');
 const force = process.argv.includes('--force');
+const auto = process.argv.includes('--auto');
 
 // 비교는 2048×1024에서(빠르고 렌더 잡음에 덜 민감). 결과 마스크를 4K·8K로 키워 쓴다
 const DW = 2048;
@@ -27,7 +30,8 @@ const sec = (t0) => `${((Date.now() - t0) / 1000).toFixed(1)}초`;
 const open = (file) => sharp(path.join(DIR, file), { limitInputPixels: false });
 
 const files = fs.readdirSync(DIR).filter((f) => fs.statSync(path.join(DIR, f)).isFile());
-const exists = new Set(files.map((f) => f.toLowerCase()));
+fs.mkdirSync(LAYER_DIR, { recursive: true });
+const exists = new Set(fs.readdirSync(BUILT).map((f) => f.toLowerCase()));
 let made = 0;
 
 // ---------- 1·2) 4K·8K JPG ----------
@@ -35,7 +39,7 @@ async function convert(file, out, width, quality) {
   if (exists.has(out.toLowerCase()) && !force) return;
   process.stdout.write(`${file} → ${out} … `);
   const t0 = Date.now();
-  await open(file).resize(width, width / 2, { fit: 'fill' }).jpeg({ quality, mozjpeg: true }).toFile(path.join(DIR, out));
+  await open(file).resize(width, width / 2, { fit: 'fill' }).jpeg({ quality, mozjpeg: true }).toFile(path.join(BUILT, out));
   console.log(`완료 (${sec(t0)})`);
   exists.add(out.toLowerCase());
   made += 1;
@@ -43,8 +47,13 @@ async function convert(file, out, width, quality) {
 
 // 장면별 원본(8K). PNG가 있으면 PNG(무손실)를 비교 원본으로 쓴다
 const sources = {};
+const cuts = {};
 for (const file of files) {
   const parsed = parsePanoFile(file);
+  if (parsed?.cut) {
+    cuts[parsed.key] = file;
+    continue;
+  }
   if (!parsed || parsed.size !== '8k') continue;
   const stem = file.replace(/(_8k)?\.[a-z]+$/i, ''); // pano_front.png → pano_front
   await convert(file, `${stem}_4k.jpg`, 4096, 88);
@@ -57,12 +66,15 @@ const pairs = [];
 for (const spot of SPOTS) {
   for (const island of ISLANDS.filter((i) => i !== 'none')) {
     const withIsland = sceneKey(spot, island, 'base');
-    if (sources[withIsland] && sources[sceneKey(spot, 'none', 'base')]) {
-      pairs.push({ key: withIsland, kind: 'island', from: sources[sceneKey(spot, 'none', 'base')], to: sources[withIsland] });
+    const base = sources[sceneKey(spot, 'none', 'base')];
+    if (base && (cuts[withIsland] || (auto && sources[withIsland]))) {
+      pairs.push({ key: withIsland, kind: 'island', cut: cuts[withIsland], from: base, to: sources[withIsland] });
     }
     for (const floor of FLOORS.filter((f) => f !== 'base')) {
       const withFloor = sceneKey(spot, island, floor);
-      if (sources[withFloor] && sources[withIsland]) pairs.push({ key: withFloor, kind: 'floor', from: sources[withIsland], to: sources[withFloor] });
+      if (base && (cuts[withFloor] || (auto && sources[withFloor] && sources[withIsland]))) {
+        pairs.push({ key: withFloor, kind: 'floor', cut: cuts[withFloor], from: sources[withIsland], to: sources[withFloor] });
+      }
     }
   }
 }
@@ -80,7 +92,24 @@ const threshold = (buf, t) => {
   return out;
 };
 
+// 누끼 파일 → 레이어. 투명하지 않은 부분만 잘라 4K·8K로 저장한다
+async function makeLayerFromCut(pair) {
+  const t0 = Date.now();
+  const meta = await open(pair.cut).metadata();
+  if (!meta.hasAlpha) {
+    console.log(`  ! ${pair.cut}: 투명 배경이 없습니다. 누끼를 딴 뒤 PNG(투명)로 저장하세요`);
+    return null;
+  }
+  if (Math.abs(meta.width / meta.height - 2) > 0.01) {
+    console.log(`  ! ${pair.cut}: 크기가 ${meta.width}×${meta.height}입니다. 원본 파노라마와 같은 크기(가로:세로 2:1)로, 자르지 말고 저장하세요`);
+    return null;
+  }
+  const alpha = await open(pair.cut).resize(DW, DH, { fit: 'fill' }).extractChannel('alpha').raw().toBuffer();
+  return writeLayer(pair, alpha, (W, H, area) => open(pair.cut).resize(W, H, { fit: 'fill' }).extract(area).ensureAlpha().raw().toBuffer(), 4, t0, '누끼');
+}
+
 async function makeLayer(pair) {
+  if (pair.cut) return makeLayerFromCut(pair);
   const t0 = Date.now();
   const small = (file) => open(file).removeAlpha().resize(DW, DH, { fit: 'fill' }).raw().toBuffer();
   const [A, B] = await Promise.all([small(pair.from), small(pair.to)]);
@@ -105,6 +134,12 @@ async function makeLayer(pair) {
   mask = threshold(await blur(mask, 4), 30); // 오브제 테두리·그림자를 넉넉히 포함
   const alpha = await blur(mask, 1.5); // 경계를 부드럽게
 
+  const rgb = (W, H, area) => open(pair.to).removeAlpha().resize(W, H, { fit: 'fill' }).linear(gain, [0, 0, 0]).extract(area).raw().toBuffer();
+  return writeLayer(pair, alpha, rgb, 3, t0, '자동');
+}
+
+// alpha(DW×DH 마스크)로 잘라낼 영역을 정하고, 4K·8K 레이어(webp)를 쓴다
+async function writeLayer(pair, alpha, readPixels, channels, t0, how) {
   let minX = DW;
   let minY = DH;
   let maxX = -1;
@@ -122,11 +157,11 @@ async function makeLayer(pair) {
     }
   }
   if (maxX < 0) {
-    console.log(`  ! ${pair.key}: 두 렌더에 차이가 없습니다. 파일이 맞는지 확인하세요 (${pair.from} / ${pair.to})`);
+    console.log(`  ! ${pair.key}: 남은 부분이 없습니다. 파일을 확인하세요 (${pair.cut ?? pair.to})`);
     return null;
   }
   const coverage = covered / (DW * DH);
-  if (coverage > WARN_COVERAGE) {
+  if (!pair.cut && coverage > WARN_COVERAGE) {
     console.log(`  ! ${pair.key}: 화면의 ${Math.round(coverage * 100)}%가 바뀌었습니다. 두 렌더의 카메라 위치나 노출이 다른 것 같습니다(D5 노출 수동 고정 권장)`);
   }
 
@@ -143,28 +178,26 @@ async function makeLayer(pair) {
     const width = Math.min(W, Math.ceil(rect[2] * W)) - left;
     const height = Math.min(H, Math.ceil(rect[3] * H)) - top;
     const area = { left, top, width, height };
-    const [rgb, a] = await Promise.all([
-      open(pair.to).removeAlpha().resize(W, H, { fit: 'fill' }).linear(gain, [0, 0, 0]).extract(area).raw().toBuffer(),
-      sharp(alpha, { raw: { width: DW, height: DH, channels: 1 } }).resize(W, H, { fit: 'fill' }).extract(area).extractChannel(0).raw().toBuffer(),
-    ]);
+    const pixels = await readPixels(W, H, area);
+    let image = sharp(pixels, { raw: { width, height, channels } });
+    if (channels === 3) {
+      const a = await sharp(alpha, { raw: { width: DW, height: DH, channels: 1 } }).resize(W, H, { fit: 'fill' }).extract(area).extractChannel(0).raw().toBuffer();
+      image = image.joinChannel(a, { raw: { width, height, channels: 1 } });
+    }
     const name = `${pair.key}_${size}.webp`;
-    await sharp(rgb, { raw: { width, height, channels: 3 } })
-      .joinChannel(a, { raw: { width, height, channels: 1 } })
-      .webp({ quality: 90, alphaQuality: 95, exact: true, effort: 4 })
-      .toFile(path.join(LAYER_DIR, name));
-    outFiles[size] = `layers/${name}`;
+    await image.webp({ quality: 90, alphaQuality: 95, exact: true, effort: 4 }).toFile(path.join(LAYER_DIR, name));
+    outFiles[size] = `built/layers/${name}`;
   }
   const kindName = pair.kind === 'island' ? '아일랜드' : '바닥재';
-  console.log(`  ${pair.key} (${kindName}) 화면의 ${(coverage * 100).toFixed(1)}% · ${sec(t0)}`);
-  return { kind: pair.kind, rect, coverage: Math.round(coverage * 1e4) / 1e4, gain: gain.map((g) => Math.round(g * 1000) / 1000), files: outFiles };
+  console.log(`  ${pair.key} (${kindName}, ${how}) 화면의 ${(coverage * 100).toFixed(1)}% · ${sec(t0)}`);
+  return { kind: pair.kind, rect, coverage: Math.round(coverage * 1e4) / 1e4, files: outFiles };
 }
 
 if (pairs.length) {
-  fs.mkdirSync(LAYER_DIR, { recursive: true });
   console.log(`\n레이어 오려내기 (${pairs.length}개 조합)`);
   const next = { version: 1, layers: {} };
   for (const pair of pairs) {
-    const sig = [signature(pair.from), signature(pair.to)];
+    const sig = pair.cut ? [signature(pair.cut), signature(pair.from)] : [signature(pair.from), signature(pair.to), 'auto'];
     const old = manifest.layers?.[pair.key];
     const fresh = old && JSON.stringify(old.sources) === JSON.stringify(sig) && Object.values(old.files).every((f) => fs.existsSync(path.join(DIR, f)));
     if (fresh && !force) {

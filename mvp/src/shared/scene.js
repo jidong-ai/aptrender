@@ -39,19 +39,22 @@ export const ALIASES = {
   island_a: 'v2_2_base', // 측면 · 아일랜드 배치(시나리오의 '아일랜드 2') · 바닥재 변경 전
 };
 
-const NAME = /^(.+?)(?:_(4k|8k))?\.(jpe?g|png|webp)$/i;
+// 누끼: 같은 이름 뒤에 _cut을 붙인 투명 PNG(원본과 같은 크기). 예: island_a_cut.png → 그 장면의 오브제 레이어
+const NAME = /^(.+?)(_cut)?(?:_(4k|8k))?\.(jpe?g|png|webp)$/i;
 
 export function parsePanoFile(file) {
   const m = NAME.exec(file);
   if (!m) return null;
-  const size = (m[2] ?? '8k').toLowerCase();
+  const size = (m[3] ?? '8k').toLowerCase();
   const base = m[1].toLowerCase();
-  if (ALIASES[base]) return { key: ALIASES[base], size };
-  const f = FILE.exec(base);
-  if (!f || !SPOTS.includes(f[1])) return null;
-  const island = f[2] === '0' ? 'none' : f[2];
-  const floor = f[3] === '0' ? 'base' : f[3];
-  return { key: sceneKey(f[1], island, floor), size };
+  const cut = Boolean(m[2]);
+  let key = ALIASES[base];
+  if (!key) {
+    const f = FILE.exec(base);
+    if (!f || !SPOTS.includes(f[1])) return null;
+    key = sceneKey(f[1], f[2] === '0' ? 'none' : f[2], f[3] === '0' ? 'base' : f[3]);
+  }
+  return cut ? { key, size, cut } : { key, size };
 }
 
 /** 장면 설명 문구. 예: "V2 아일랜드 앞 · 아일랜드 2 · 바닥재 B" */

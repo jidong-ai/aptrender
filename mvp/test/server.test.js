@@ -154,12 +154,15 @@ test('managerView는 부분 갱신되고 범위를 벗어난 값은 보정된다
   await Promise.all([tablet.close(), xr.close()]);
 });
 
-test('파노라마 목록: 폴더의 파일을 이름 규칙·별칭으로 찾는다', async () => {
+test('파노라마 목록: 원본·built 폴더를 이름 규칙·별칭으로 찾고, 누끼는 뺀다', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pano-'));
-  for (const f of ['pano_front.png', 'pano_front_8k.jpg', 'pano_side_4k.jpg', 'v2_island1_floora_8k.jpg', 'notes.txt']) fs.writeFileSync(path.join(dir, f), '');
+  fs.mkdirSync(path.join(dir, 'built'));
+  for (const f of ['pano_front.png', 'pano_side.jpg', 'island_a.png', 'island_a_cut.png', 'v2_island1_floora_8k.jpg', 'notes.txt']) fs.writeFileSync(path.join(dir, f), '');
+  for (const f of ['pano_front_4k.jpg', 'pano_front_8k.jpg', 'pano_side_4k.jpg']) fs.writeFileSync(path.join(dir, 'built', f), '');
   assert.deepEqual(listPanos(dir), {
-    v1_none_base: { '8k': '/assets/pano/pano_front_8k.jpg' }, // PNG와 JPG가 같이 있으면 JPG
-    v2_none_base: { '4k': '/assets/pano/pano_side_4k.jpg' },
+    v1_none_base: { '4k': '/assets/pano/built/pano_front_4k.jpg', '8k': '/assets/pano/built/pano_front_8k.jpg' }, // PNG보다 built JPG
+    v2_none_base: { '4k': '/assets/pano/built/pano_side_4k.jpg', '8k': '/assets/pano/pano_side.jpg' },
+    v2_2_base: { '8k': '/assets/pano/island_a.png' },
     v2_1_a: { '8k': '/assets/pano/v2_island1_floora_8k.jpg' },
   });
   fs.rmSync(dir, { recursive: true });
@@ -181,14 +184,14 @@ test('spot은 매니저·고객을 따로 갱신할 수 있고, 잘못된 시점
 
 test('레이어 목록: manifest에 있고 파일이 실제로 있는 것만', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pano-'));
-  fs.mkdirSync(path.join(dir, 'layers'));
-  fs.writeFileSync(path.join(dir, 'layers', 'v2_2_base_4k.webp'), '');
+  fs.mkdirSync(path.join(dir, 'built', 'layers'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'built', 'layers', 'v2_2_base_4k.webp'), '');
   fs.writeFileSync(
-    path.join(dir, 'layers', 'manifest.json'),
-    JSON.stringify({ layers: { v2_2_base: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': 'layers/v2_2_base_4k.webp', '8k': 'layers/v2_2_base_8k.webp' } } } }),
+    path.join(dir, 'built', 'layers', 'manifest.json'),
+    JSON.stringify({ layers: { v2_2_base: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': 'built/layers/v2_2_base_4k.webp', '8k': 'built/layers/v2_2_base_8k.webp' } } } }),
   );
   assert.deepEqual(listLayers(dir), {
-    v2_2_base: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': '/assets/pano/layers/v2_2_base_4k.webp' } },
+    v2_2_base: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': '/assets/pano/built/layers/v2_2_base_4k.webp' } },
   });
   assert.deepEqual(listLayers(path.join(dir, 'nope')), {});
   fs.rmSync(dir, { recursive: true });

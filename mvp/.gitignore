@@ -3,6 +3,8 @@ dist/
 .DS_Store
 *.log
 
-# 파노라마는 용량이 커서 git에 올리지 않는다(GitHub 웹 업로드 25MB 제한). 각 컴퓨터의 assets/pano에 직접 복사
-assets/pano/*
-!assets/pano/README.md
+# 파노라마: 압축본(JPG)과 누끼(_cut.png)만 git에 올린다.
+# 원본 PNG(용량 큼)와 npm run pano:prep 결과(built/, 언제든 다시 만들 수 있음)는 올리지 않는다
+assets/pano/*.png
+!assets/pano/*_cut.png
+assets/pano/built/

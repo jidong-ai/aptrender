@@ -12,7 +12,8 @@
     "build": "vite build",
     "start": "vite build && node server/index.js --prod",
     "test": "node --test test/*.test.js",
-    "pano:prep": "node scripts/prep-pano.mjs"
+    "pano:prep": "node scripts/prep-pano.mjs",
+    "pano:clean": "node -e \"require('fs').rmSync('assets/pano/built',{recursive:true,force:true});console.log('assets/pano/built 삭제 완료 (npm run pano:prep으로 다시 만들 수 있음)')\""
   },
   "dependencies": {
     "qrcode-terminal": "^0.12.0",

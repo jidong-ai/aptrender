@@ -20,29 +20,34 @@ const DIST = path.join(ROOT, 'dist');
 const ASSETS = path.join(ROOT, 'assets');
 const PANO_DIR = path.join(ASSETS, 'pano');
 
-// assets/pano 폴더를 훑어 실제로 있는 파노라마 목록을 만든다. 이름 규칙은 src/shared/scene.js
+// assets/pano(원본)와 assets/pano/built(pano:prep 결과)를 훑어 실제로 있는 파노라마 목록을 만든다.
+// 이름 규칙은 src/shared/scene.js. 같은 장면·크기가 여럿이면 built의 JPG → 원본 JPG → PNG 순으로 쓴다.
 export function listPanos(dir = PANO_DIR) {
   const panos = {};
-  let files = [];
-  try {
-    files = fs.readdirSync(dir);
-  } catch {}
-  for (const file of files.sort()) {
-    const parsed = parsePanoFile(file);
-    if (!parsed) continue;
-    const entry = (panos[parsed.key] ??= {});
-    // 같은 장면·크기가 둘이면 JPG를 쓴다(PNG보다 가벼움). 예: pano_front.png와 pano_front_8k.jpg
-    if (entry[parsed.size] && !/\.png$/i.test(entry[parsed.size])) continue;
-    entry[parsed.size] = `/assets/pano/${encodeURIComponent(file)}`;
+  const rank = (rel) => (rel.startsWith('built/') ? 0 : /\.png$/i.test(rel) ? 2 : 1);
+  for (const sub of ['built', '']) {
+    let files = [];
+    try {
+      files = fs.readdirSync(path.join(dir, sub), { withFileTypes: true }).filter((d) => d.isFile()).map((d) => d.name);
+    } catch {}
+    for (const file of files.sort()) {
+      const parsed = parsePanoFile(file);
+      if (!parsed || parsed.cut) continue; // 누끼는 레이어 재료라 목록에 넣지 않는다
+      const rel = sub ? `${sub}/${file}` : file;
+      const entry = (panos[parsed.key] ??= {});
+      const prev = entry[parsed.size];
+      if (prev && rank(prev.replace('/assets/pano/', '')) <= rank(rel)) continue;
+      entry[parsed.size] = `/assets/pano/${rel.split('/').map(encodeURIComponent).join('/')}`;
+    }
   }
   return panos;
 }
 
-// npm run pano:prep이 만든 레이어 목록(assets/pano/layers/manifest.json). 파일이 실제로 있는 것만
+// npm run pano:prep이 만든 레이어 목록(assets/pano/built/layers/manifest.json). 파일이 실제로 있는 것만
 export function listLayers(dir = PANO_DIR) {
   let manifest;
   try {
-    manifest = JSON.parse(fs.readFileSync(path.join(dir, 'layers', 'manifest.json'), 'utf8'));
+    manifest = JSON.parse(fs.readFileSync(path.join(dir, 'built', 'layers', 'manifest.json'), 'utf8'));
   } catch {
     return {};
   }
