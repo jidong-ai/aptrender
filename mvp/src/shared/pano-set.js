@@ -113,6 +113,10 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
           img.src = url;
           await img.decode();
           g.drawImage(img, 0, 0, canvas.width, canvas.height);
+          // Figma 채우기가 반투명(fill-opacity)이어도 영역 안은 꽉 차게: 조금이라도 칠해진 픽셀은 불투명으로
+          const px = g.getImageData(0, 0, canvas.width, canvas.height);
+          for (let i = 3; i < px.data.length; i += 4) px.data[i] = px.data[i] > 8 ? 255 : 0;
+          g.putImageData(px, 0, 0);
           log(`바닥 영역 마스크 사용: ${url.split('/').pop()}`);
           return canvas;
         } catch {

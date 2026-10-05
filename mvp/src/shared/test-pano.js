@@ -101,7 +101,7 @@ export function makePlaceholderLayer({ kind, rect, label, color = '#8a6a4f', wid
   } else {
     const pad = W * 0.06;
     g.fillStyle = color;
-    g.globalAlpha = 0.82;
+    g.globalAlpha = 0.5; // 반투명: 아래 바닥재 영역이 비쳐 보이게(실제 누끼가 오면 대체됨)
     g.fillRect(pad, H * 0.3, W - pad * 2, H * 0.62);
     g.globalAlpha = 1;
     g.strokeStyle = '#fff';
