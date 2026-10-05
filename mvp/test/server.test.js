@@ -136,6 +136,31 @@ test('주석 stroke 시작·추가·종료·삭제가 상태와 중계에 반영
   await Promise.all([tablet.close(), xr.close()]);
 });
 
+test('아일랜드를 놓으면 체크 주석이 지워지고, stat은 flow.stats에 쌓인다', async () => {
+  const tablet = connect('tablet');
+  const xr = connect('xr');
+  await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
+  tablet.send({ type: 'jump', step: 'S3-1c' });
+  await xr.next('snapshot', (m) => m.reason === 'jump');
+  tablet.send({ type: 'stroke:start', stroke: { id: 'chk', tool: 'pencil', width: 4, color: '#003270', pts: [[0, -20]] } });
+  await xr.next('stroke:start');
+
+  tablet.send({ type: 'stat', key: 'misses' });
+  assert.equal((await xr.next('flow')).flow.stats.misses, 1);
+  tablet.send({ type: 'stat', key: 'nope' });
+  assert.match((await tablet.next('error')).message, /stat/);
+
+  tablet.send({ type: 'flow', from: 'S3-1c', action: 'product', value: 'b' });
+  await xr.next('flow', (m) => m.flow.step === 'S3-2');
+  assert.equal((await xr.next('stroke:erase')).id, 'chk');
+  assert.equal(server.getState().strokes.length, 0);
+  assert.equal(server.getState().flow.stats.misses, 1); // 단계가 넘어가도 기록 유지
+
+  tablet.send({ type: 'reset' });
+  await xr.next('snapshot', (m) => m.reason === 'reset');
+  await Promise.all([tablet.close(), xr.close()]);
+});
+
 test('접속 기기 수(peers)를 알려준다', async () => {
   const tablet = connect('tablet');
   await tablet.next('snapshot');

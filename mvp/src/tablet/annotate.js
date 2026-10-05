@@ -19,7 +19,7 @@ export function coverage(template, pts, tol = 3.5) {
 
 export function createAnnotator(viewer, sync, { pano = 'kitchen_front', onStrokeEnd = () => {} } = {}) {
   const el = viewer.renderer.domElement;
-  const state = { enabled: false, tool: 'pencil', color: '#ff460e', width: 2 };
+  const state = { enabled: false, tool: 'pencil', color: '#003270', width: 2 };
   let current = null; // { id, pts, pending, timer }
   let seq = 0;
   const mine = []; // 내가 그린 stroke id(지우개용)

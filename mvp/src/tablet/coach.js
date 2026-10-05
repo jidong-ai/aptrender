@@ -50,7 +50,7 @@ export function createCoach({ root, hole, label, onBlocked = () => {} }) {
       root.hidden = true;
       return;
     }
-    const r = goal.rect();
+    const r = goal.quiet ? null : goal.rect(); // quiet: 누를 수만 있고 표시는 없음
     if (!r) {
       root.hidden = true;
       return;
@@ -91,10 +91,10 @@ export function createCoach({ root, hole, label, onBlocked = () => {} }) {
 
   return {
     /** UI 버튼 대상: target 이름 + (선택) 허용 값 */
-    ui(target, values, text, { dim = true } = {}) {
+    ui(target, values, text, { dim = true, quiet = false } = {}) {
       const match = (el) => el.dataset.target === target && (!values || values.includes(el.dataset.value));
       const find = () => [...document.querySelectorAll(`[data-target="${CSS.escape(target)}"]`)].filter(match).filter((el) => el.offsetParent);
-      goal = { match, find, rect: () => union(find()), text, dim };
+      goal = { match, find, rect: () => union(find()), text, dim, quiet };
     },
     /** 공간 대상(핫스팟·체크 자리): rect()가 화면 사각형을 준다. 누를 수 있는 요소면 match로 허용 */
     spatial({ rect, text, match = () => false, find = () => [] }) {

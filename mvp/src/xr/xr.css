@@ -436,5 +436,57 @@
 }
 
 .space-label.mgr span {
-  background: var(--orange-100);
+  background: var(--blue-400); /* 체크 표시 색(#003270)과 맞춤 */
+}
+
+/* 엔딩: 진행 확정 도장 · 매니저 평가 별점 */
+.report .card {
+  position: relative;
+}
+
+.report .stamp {
+  position: absolute;
+  right: 36px;
+  top: 30px;
+  padding: 10px 22px;
+  border: 5px solid var(--orange-100);
+  border-radius: 14px;
+  color: var(--orange-100);
+  font-size: 34px;
+  font-weight: 800;
+  transform: rotate(-12deg);
+  animation: stamp 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) 1.1s both;
+}
+
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: rotate(-12deg) scale(2.4);
+  }
+}
+
+.report .rate {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 22px;
+}
+
+.report .stars span {
+  display: inline-block;
+  font-size: 44px;
+  color: rgb(255 255 255 / 0.25);
+  animation: r-star-xr 0.5s cubic-bezier(0.2, 1.8, 0.4, 1) both;
+}
+
+.report .stars span.on {
+  color: #ffc93c;
+  text-shadow: 0 0 18px rgb(255 201 60 / 0.6);
+}
+
+@keyframes r-star-xr {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
 }

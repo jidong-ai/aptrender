@@ -13,7 +13,7 @@ import {
   sanitizeStroke,
 } from '../src/shared/protocol.js';
 import { parsePanoFile } from '../src/shared/scene.js';
-import { STEP, clearsStrokes, jumpFlow, nextStep } from '../src/shared/scenario.js';
+import { STAT_KEYS, STEP, clearsStrokes, jumpFlow, nextStep } from '../src/shared/scenario.js';
 import { getLanAddresses } from './lan.js';
 
 export const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -61,6 +61,20 @@ export function listLayers(dir = PANO_DIR) {
     if (Object.keys(files).length) layers[key] = { kind: layer.kind, rect: layer.rect, files };
   }
   return layers;
+}
+
+// 바닥재 적용 영역 마스크(Figma 펜툴로 그려 내보낸 파일): assets/pano/masks/{장면}_floor.svg|png
+export function listMasks(dir = PANO_DIR) {
+  const masks = {};
+  let files = [];
+  try {
+    files = fs.readdirSync(path.join(dir, 'masks'));
+  } catch {}
+  for (const file of files.sort()) {
+    const m = /^([a-z0-9_]+)\.(svg|png)$/i.exec(file);
+    if (m) masks[m[1].toLowerCase()] = `/assets/pano/masks/${encodeURIComponent(file)}`;
+  }
+  return masks;
 }
 
 const PAGES = { '/': 'index.html', '/tablet': 'tablet.html', '/xr': 'xr.html' };
@@ -145,7 +159,7 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
     }
     if (pathname === '/api/panos') {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache' });
-      res.end(JSON.stringify({ panos: listPanos(), layers: listLayers() }));
+      res.end(JSON.stringify({ panos: listPanos(), layers: listLayers(), masks: listMasks() }));
       return;
     }
     if (pathname === '/api/ui') {
@@ -235,6 +249,10 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
       return null;
     }
     commit(client ?? { id: 0 }, { type: 'flow', flow: result.flow });
+    // 단계가 끝나면서 지워야 할 주석(예: 아일랜드를 놓으면 900mm 체크 표시)
+    if (STEP[msg.from].clearStrokes) {
+      for (const s of [...state.strokes]) commit({ id: 0 }, { type: 'stroke:erase', id: s.id });
+    }
     armAuto();
     log(`${who} → ${msg.action}${msg.value ? `(${msg.value})` : ''} · ${msg.from} → ${result.flow.step} (rev ${rev})`);
     return null;
@@ -309,6 +327,16 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
         if (typeof msg.from !== 'string' || typeof msg.action !== 'string' || msg.action === 'auto') return reject('flow 형식이 올바르지 않습니다.');
         const error = advance(client, { from: msg.from, action: msg.action, value: typeof msg.value === 'string' ? msg.value : undefined });
         if (error) reject(error);
+        return;
+      }
+
+      case 'stat': {
+        // 엔딩 보상용 기록: 헛탭(misses), 체크 시도(traceTries)
+        if (!STAT_KEYS.includes(msg.key)) return reject(`알 수 없는 stat: ${msg.key}`);
+        const flow = structuredClone(state.flow);
+        flow.stats = { misses: 0, traceTries: 0, ...flow.stats };
+        flow.stats[msg.key] += 1;
+        commit(client, { type: 'flow', flow });
         return;
       }
 

@@ -85,3 +85,21 @@ test('예상 금액 = 항목 합계', () => {
   assert.equal(e.total, e.items.reduce((s, i) => s + i.amount, 0));
   assert.ok(estimate({ island: 'a' }).total < estimate({ island: 'b' }).total);
 });
+
+test('엔딩 보상: 별 3개 조건과 칭호', async () => {
+  const { rewardFor } = await import('../src/shared/scenario.js');
+  const full = rewardFor({ choices: { island: 'b', floor: 'portland' }, stats: { misses: 1 } });
+  assert.equal(full.count, 3);
+  assert.equal(full.title, '베테랑 위브 매니저');
+  const one = rewardFor({ choices: { island: 'a', floor: 'flosso' }, stats: { misses: 5 } });
+  assert.equal(one.count, 1);
+  assert.deepEqual(one.stars.map((s) => s.ok), [true, false, false]);
+});
+
+test('주석은 체크 단계부터 아일랜드 배치 전까지만 남는다', async () => {
+  const { clearsStrokes, STEP } = await import('../src/shared/scenario.js');
+  assert.equal(clearsStrokes('S2-2c'), true);
+  assert.equal(clearsStrokes('S3-1b'), false);
+  assert.equal(clearsStrokes('S3-2'), true);
+  assert.equal(STEP['S3-1c'].clearStrokes, true);
+});

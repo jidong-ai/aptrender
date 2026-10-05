@@ -77,6 +77,19 @@ export const ANCHORS = {
   },
 };
 
+// 바닥재 적용 영역(누끼가 없을 때 와이어프레임을 칠할 곳). 이미지 기준 0~1 좌표의 다각형.
+// Figma 펜툴로 그린 마스크(assets/pano/masks/{장면}_floor.svg|png)가 있으면 그걸 쓴다(assets/pano/README.md)
+export const FLOOR_AREA = {
+  kitchen_front: [
+    [0.468, 0.565],
+    [0.532, 0.565],
+    [0.585, 0.7],
+    [0.62, 0.84],
+    [0.38, 0.84],
+    [0.415, 0.7],
+  ],
+};
+
 // 렌더가 없을 때 와이어프레임 레이어를 그릴 자리(이미지 기준 0~1 사각형)
 export const PLACEHOLDER_RECT = {
   island: [0.43, 0.56, 0.57, 0.68],

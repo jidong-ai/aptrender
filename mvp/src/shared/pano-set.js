@@ -1,10 +1,11 @@
-import { makePlaceholderLayer, makeTestPano } from './test-pano.js';
-import { LAYERS, PANOS, PLACEHOLDER_RECT, layerIdFor } from './scene.js';
+import { makeMaskedLayer, makePlaceholderLayer, makeTestPano } from './test-pano.js';
+import { FLOOR_AREA, LAYERS, PANOS, PLACEHOLDER_RECT, layerIdFor } from './scene.js';
 import { FLOORS, ISLANDS } from './catalog.js';
 
 // 렌더가 없는 장면의 테스트 격자 색
 const TINTS = { store_1: '#e3ddd3', store_2: '#ddd6ca', counsel: '#d6dbe0', kitchen_front: '#e4e4e4', kitchen_side: '#dcdcdc' };
 const ISLAND_TINT = { a: '#e8e4dc', b: '#5a2f22', c: '#b08a5e' };
+const FLOOR_WIRE = { portland: '#6f6a63', flosso: '#a39a8c' }; // 와이어프레임 바닥색(밝은 바닥 위에서도 보이게 실제보다 진하게)
 
 // 화면에 동시에 올려 두는 묶음(장). 장이 바뀌면 다른 장의 텍스처를 내린다(아이패드·아이맥 메모리 보호)
 const CHAPTERS = {
@@ -24,8 +25,9 @@ export const PART_TEXT = { render: '렌더', cut: '누끼', full: '통째 렌더
 export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) {
   let catalog = {};
   let layers = {};
+  let masks = {};
   try {
-    ({ panos: catalog = {}, layers = {} } = await (await fetch('/api/panos')).json());
+    ({ panos: catalog = {}, layers = {}, masks = {} } = await (await fetch('/api/panos')).json());
   } catch {
     log('파노라마 목록을 받지 못함 → 테스트 격자로 표시');
   }
@@ -97,6 +99,47 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
   const once = (key, fn) => (made.has(key) ? made.get(key) : (made.set(key, fn()), made.get(key)));
   const testTexture = (pano) =>
     once(`test:${pano}`, () => viewer.canvasTexture(makeTestPano({ tint: TINTS[pano], label: `${PANOS[pano]?.name ?? pano} · 렌더 없음` })));
+  // 바닥재 적용 영역 마스크(2048×1024): Figma에서 그린 파일 → 없으면 scene.js의 기본 다각형
+  function floorMask(pano) {
+    return once(`mask:${pano}`, async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const g = canvas.getContext('2d');
+      const url = masks[`${pano}_floor`];
+      if (url) {
+        try {
+          const img = new Image();
+          img.src = url;
+          await img.decode();
+          g.drawImage(img, 0, 0, canvas.width, canvas.height);
+          log(`바닥 영역 마스크 사용: ${url.split('/').pop()}`);
+          return canvas;
+        } catch {
+          log(`바닥 영역 마스크를 읽지 못함: ${url}`);
+        }
+      }
+      const poly = FLOOR_AREA[pano];
+      if (!poly) return null;
+      g.fillStyle = '#000';
+      g.beginPath();
+      poly.forEach(([u, v], i) => g[i ? 'lineTo' : 'moveTo'](u * canvas.width, v * canvas.height));
+      g.fill();
+      return canvas;
+    });
+  }
+
+  async function wireFloor(pano, option) {
+    return once(`wire:floor:${pano}:${option}`, async () => {
+      const mask = await floorMask(pano);
+      const label = `바닥재 · ${FLOORS[option]?.name ?? option}`;
+      const drawn = mask && makeMaskedLayer({ mask, color: FLOOR_WIRE[option] ?? '#8a6a4f', label });
+      if (drawn) return { texture: viewer.canvasTexture(drawn.canvas), rect: drawn.rect };
+      const rect = PLACEHOLDER_RECT.floor;
+      return { texture: viewer.canvasTexture(makePlaceholderLayer({ kind: 'floor', rect, label, color: FLOORS[option]?.swatch })), rect };
+    });
+  }
+
   function wireLayer(kind, option) {
     return once(`wire:${kind}:${option}`, () => {
       const rect = PLACEHOLDER_RECT[kind];
@@ -114,7 +157,7 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
       const texture = await get(`layer:${id}`);
       if (texture) return { layer: { texture, rect: layers[id].rect }, part: 'cut' };
     }
-    return { layer: wireLayer(kind, option), part: 'wire' };
+    return { layer: kind === 'floor' ? await wireFloor(pano, option) : wireLayer(kind, option), part: 'wire' };
   }
 
   return {

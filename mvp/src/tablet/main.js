@@ -7,7 +7,7 @@ import { PanoViewer } from '../shared/pano-viewer.js';
 import { attachLookControls } from '../shared/look-controls.js';
 import { PART_TEXT, createScenePlayer } from '../shared/pano-set.js';
 import { ANCHORS, PANOS } from '../shared/scene.js';
-import { SPEAKERS, STEP, STEPS, stepIndex, tabletSceneFor } from '../shared/scenario.js';
+import { SPEAKERS, STEP, STEPS, coachDim, stepIndex, tabletSceneFor } from '../shared/scenario.js';
 import { createAnchors, createSphereLines, interpolate } from '../shared/overlays.js';
 import { icon, loadUiAssets } from '../shared/ui-assets.js';
 import { wrapYaw } from '../shared/angles.js';
@@ -140,6 +140,7 @@ const annotator = createAnnotator(viewer, sync, {
     const step = latest && STEP[latest.flow.step];
     if (step?.target !== 'trace') return;
     traceTries += 1;
+    sync.send({ type: 'stat', key: 'traceTries' });
     const cov = coverage(checkDense, stroke.pts);
     hud.log(`체크 판정: ${Math.round(cov * 100)}% (${traceTries}번째)`);
     if (cov >= TRACE_PASS || traceTries >= TRACE_TRIES) {
@@ -165,7 +166,7 @@ annotateBar.select(annotator.state.tool, annotator.state.width);
 let traceHint = null;
 
 // ---------- 가이드 ----------
-const coach = createCoach({ root: $('coach'), hole: $('coachHole'), label: $('coachLabel') });
+const coach = createCoach({ root: $('coach'), hole: $('coachHole'), label: $('coachLabel'), onBlocked: () => sync.send({ type: 'stat', key: 'misses' }) });
 const dragHint = h('div.drag-hint', {}, h('span.drag-finger'), h('span.drag-text', {}, '화면을 끌어 주방을 둘러보세요'));
 dragHint.hidden = true;
 document.body.append(dragHint);
@@ -217,7 +218,7 @@ function updateCoach(flow, step) {
     dragHint.hidden = false;
     return coach.clear();
   }
-  coach.ui(step.target, step.values, step.hint, { dim: step.target !== 'start' });
+  coach.ui(step.target, step.values, step.hint, { dim: coachDim(step), quiet: Boolean(step.quiet) });
 }
 
 let stepEnteredLocal = 0;

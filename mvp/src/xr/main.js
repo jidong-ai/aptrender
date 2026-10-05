@@ -7,7 +7,8 @@ import { PanoViewer } from '../shared/pano-viewer.js';
 import { attachLookControls } from '../shared/look-controls.js';
 import { PART_TEXT, createScenePlayer } from '../shared/pano-set.js';
 import { ANCHORS, PANOS } from '../shared/scene.js';
-import { SPEAKERS, STEP, STEPS, stepIndex, tabletSceneFor, xrSceneFor } from '../shared/scenario.js';
+import { SPEAKERS, STEP, STEPS, rewardFor, stepIndex, tabletSceneFor, xrSceneFor } from '../shared/scenario.js';
+import { confetti } from '../shared/celebrate.js';
 import { FLOORS, ISLANDS, estimate, won } from '../shared/catalog.js';
 import { createAnchors, createSphereLines } from '../shared/overlays.js';
 import { icon, loadUiAssets } from '../shared/ui-assets.js';
@@ -156,10 +157,20 @@ function renderPrice(choices) {
   box.append(el('small', '', '예상 금액'), t, el('div', 'note', '전시용 예시 금액'));
 }
 
-function renderReport(choices) {
+// 엔딩(고객 시점): 리포트 도착 → '진행 확정' 도장 → 매니저 평가 별점 → 색종이
+function renderReport(flow) {
+  const { choices } = flow;
   const { total } = estimate(choices);
+  const reward = rewardFor(flow);
   const card = el('div', 'card');
-  card.append(el('small', '', '오늘의집 위브'), el('h2', '', '상담 리포트가 도착했어요'));
+  const stamp = el('div', 'stamp', '진행 확정');
+  const stars = el('div', 'stars');
+  reward.stars.forEach((s, i) => {
+    const st = el('span', s.ok ? 'on' : '', '★');
+    st.style.animationDelay = `${1.6 + i * 0.35}s`;
+    stars.append(st);
+  });
+  card.append(stamp, el('small', '', '오늘의집 위브'), el('h2', '', '상담 리포트가 도착했어요'));
   for (const [label, name] of [
     ['아일랜드', choices.island ? ISLANDS[choices.island].name : '-'],
     ['바닥재', choices.floor ? FLOORS[choices.floor].name : '-'],
@@ -168,9 +179,12 @@ function renderReport(choices) {
     row.append(el('span', '', label), el('b', '', name));
     card.append(row);
   }
-  card.append(el('div', 'total', `예상 ${won(total)}`), el('q', '', '이대로 진행하고 싶어요'));
+  const rate = el('div', 'rate');
+  rate.append(el('small', '', '매니저 상담 평가'), stars);
+  card.append(el('div', 'total', `예상 ${won(total)}`), rate, el('q', '', '이대로 진행하고 싶어요'));
   $('report').textContent = '';
   $('report').append(card);
+  setTimeout(() => confetti($('report'), { origin: { x: 0.5, y: 0.3 } }), 1200);
 }
 
 // ---------- 매니저 시선 ----------
@@ -244,7 +258,7 @@ function onState(state) {
   if (screen === 'home') renderPrice(flow.choices);
   else $('price').hidden = true;
   $('report').hidden = !step.xr.report;
-  if (step.xr.report && stepChanged) renderReport(flow.choices);
+  if (step.xr.report && stepChanged) renderReport(flow);
 
   const want = xrSceneFor(flow, sync.serverNow());
   if (step.xr.sideAfter && stepChanged) setTimeout(() => latest === state && rerender(), Math.max(0, flow.enteredAt + step.xr.sideAfter - sync.serverNow()) + 20);

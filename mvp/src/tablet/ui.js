@@ -2,6 +2,8 @@
 // 모든 버튼에는 data-target(가이드 대상 이름)을 단다. 누를 수 있는지는 coach.js가 정한다.
 import { FLOORS, FLOOR_CHIPS, FLOOR_CHIP_SELECTED, ISLANDS, estimate, won } from '../shared/catalog.js';
 import { icon, picture, hasAsset } from '../shared/ui-assets.js';
+import { confetti, countUp } from '../shared/celebrate.js';
+import { rewardFor } from '../shared/scenario.js';
 
 /** 작은 DOM 도우미: h('button.pill', { dataset: {...} }, ...children) */
 export function h(tag, props = {}, ...children) {
@@ -34,7 +36,7 @@ export const NAV = [
 ];
 
 export const PEN_TOOLS = [
-  { tool: 'pencil', icon: 'pencil', label: '연필', color: '#ff460e' },
+  { tool: 'pencil', icon: 'pencil', label: '연필', color: '#003270' },
   { tool: 'highlighter', icon: 'highlighter', label: '형광펜', color: '#1aa0ff' },
   { tool: 'pen', icon: 'pen', label: '펜', color: '#205ba5' },
 ];
@@ -246,12 +248,34 @@ export function renderPanel(body, name, ctx) {
   body.append(...PANELS[name](ctx));
 }
 
-export function renderEnding(el, flow) {
+/**
+ * 엔딩 보상 화면(게임 결과 화면처럼): 상담 완료 → 고객 반응 → 별 3개가 하나씩 → 기록 카운트업 → 칭호 획득 → 다시 하기
+ * 레퍼런스: 학습 앱의 레슨 완료 화면(기록 카드 카운트업·색종이), 레이싱·요리 게임의 별점 결과, 업적 달성 배지
+ */
+export function renderEnding(el, flow, { onShown = () => {} } = {}) {
   el.textContent = '';
+  const reward = rewardFor(flow);
+  const { total } = estimate(flow.choices);
+  const consultMs = flow.timerAt ? Math.max(0, flow.enteredAt - flow.timerAt) : 0;
+  const star = (s, i) =>
+    h('div.r-star', { dataset: { ok: String(s.ok) }, style: { animationDelay: `${0.9 + i * 0.45}s` } }, h('span.r-star-ico', {}, '★'), h('small', {}, s.label));
+  const stat = (label, valueEl, unit = '') => h('div.r-stat', {}, h('small', {}, label), h('b', {}, valueEl, unit && h('em', {}, unit)));
+  const timeEl = h('span', {}, '00:00');
+  const countEl = h('span', {}, '0');
+  const totalEl = h('span', {}, '0원');
   el.append(
-    h('h2', {}, '김민선 씨에게 상담 리포트를 보냈어요'),
-    h('q', {}, '이대로 진행하고 싶어요'),
-    estimateBox(flow.choices),
-    h('div.again', {}, '잠시 후 처음 화면으로 돌아갑니다'),
+    h('div.r-burst'),
+    h('div.r-head', {}, h('span.r-kicker', {}, 'CONSULTING COMPLETE'), h('h2', {}, '상담 완료!')),
+    h('div.r-bubble', {}, h('span.r-avatar', {}, picture('avatar.png', '')), h('div', {}, h('small', {}, '김민선 고객'), h('q', {}, '이대로 진행하고 싶어요'))),
+    h('div.r-stars', {}, reward.stars.map(star)),
+    h('div.r-stats', {}, stat('상담 시간', timeEl), stat('제안한 제품', countEl, '개'), stat('예상 견적', totalEl)),
+    h('div.r-badge', {}, h('span.r-badge-ico', {}, 'W'), h('div', {}, h('small', {}, '칭호 획득'), h('b', {}, reward.title))),
+    h('div.r-cta', {}, h('button.r-again', { type: 'button', dataset: { target: 'restart' } }, '다시 체험하기'), h('span.r-auto', {}, '잠시 후 처음 화면으로 돌아갑니다')),
   );
+  countUp(timeEl, consultMs / 1000, { delay: 2300, duration: 900, format: (n) => mmss(n * 1000) });
+  countUp(countEl, [flow.choices.island, flow.choices.floor].filter(Boolean).length, { delay: 2300, duration: 700 });
+  countUp(totalEl, total, { delay: 2300, duration: 1300, format: won });
+  confetti(el, { origin: { x: 0.5, y: 0.25 } });
+  setTimeout(() => confetti(el, { count: 90, origin: { x: 0.5, y: 0.62 } }), 3300); // 칭호 획득 때 한 번 더
+  onShown(reward);
 }

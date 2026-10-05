@@ -126,3 +126,60 @@ export function makePlaceholderLayer({ kind, rect, label, color = '#8a6a4f', wid
   }
   return canvas;
 }
+
+/**
+ * 영역 마스크(파노라마와 같은 2:1 좌표) 안쪽만 채운 와이어프레임 바닥재 레이어.
+ *  mask: 2:1 캔버스(불투명한 곳 = 적용 영역). Figma 펜툴로 그린 SVG나 기본 다각형을 그려 넣은 것
+ *  반환 { canvas, rect } — rect는 영역을 감싸는 사각형(이미지 기준 0~1)
+ */
+export function makeMaskedLayer({ mask, color = '#8a6a4f', label = '' }) {
+  const W = mask.width;
+  const H = mask.height;
+  const data = mask.getContext('2d').getImageData(0, 0, W, H).data;
+  let x0 = W;
+  let y0 = H;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (data[(y * W + x) * 4 + 3] < 8) continue;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) return null;
+  const w = x1 - x0 + 1;
+  const h = y1 - y0 + 1;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const g = canvas.getContext('2d');
+  g.drawImage(mask, x0, y0, w, h, 0, 0, w, h);
+  g.globalCompositeOperation = 'source-in'; // 마스크 모양 그대로 칠한다
+  g.fillStyle = color;
+  g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = 'source-atop';
+  g.strokeStyle = 'rgba(255,255,255,0.45)';
+  g.lineWidth = 1.5;
+  const step = W / 160;
+  for (let x = -x0 % step; x <= w; x += step) g.strokeRect(x, -1, step, h + 2);
+  for (let y = 0; y <= h; y += step) g.strokeRect(-1, y, w + 2, step);
+  g.globalCompositeOperation = 'destination-in'; // 반투명
+  g.fillStyle = 'rgba(0,0,0,0.75)';
+  g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = 'source-over';
+  if (label) {
+    const size = Math.max(10, Math.round(H * 0.018));
+    g.font = `700 ${size}px Pretendard, -apple-system, sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineWidth = size * 0.2;
+    g.strokeStyle = 'rgba(0,0,0,0.55)';
+    g.strokeText(label, w / 2, h * 0.45);
+    g.fillStyle = '#fff';
+    g.fillText(label, w / 2, h * 0.45);
+  }
+  return { canvas, rect: [x0 / W, y0 / H, (x1 + 1) / W, (y1 + 1) / H] };
+}

@@ -8,6 +8,9 @@
 //  values   target이 여러 값 중 하나를 고르는 경우(후보 선택)
 //  set      다음 단계로 넘어갈 때 선택 상태에 더할 값
 //  auto     이 시간(ms)이 지나면 서버가 자동으로 넘긴다
+//  quiet    가이드 표시 없이 대상만 누를 수 있게(시작화면처럼 버튼이 이미 눈에 띌 때)
+//  dim      대상 외 화면을 어둡게 할지. 생략하면 작은 메뉴 버튼(tool:·nav:·category:)만 어둡게 한다
+//  clearStrokes  다음 단계로 넘어갈 때 주석을 지운다
 //  tablet   태블릿 화면: screen('start'|'pano'|'ending'), pano, panel(가운데 카드), annotate, dims
 //  xr       XR 화면: screen('standby'|'boot'|'home'|'ending'), side(고객만 측면으로, sideAfter ms 뒤), report
 
@@ -22,6 +25,7 @@ export const STEPS = [
     chapter: 'opening',
     target: 'start',
     hint: '눌러서 체험 시작',
+    quiet: true,
     tablet: { screen: 'start', pano: 'store_1' },
     xr: { screen: 'standby' },
   },
@@ -127,6 +131,7 @@ export const STEPS = [
     values: ['b'],
     hint: '아떼 원목 아일랜드 식탁',
     set: () => ({ island: 'b' }),
+    clearStrokes: true, // 아일랜드를 놓으면 900mm 체크 표시는 역할을 다했으므로 지운다
     tablet: { pano: 'kitchen_front', panel: 'catalog' },
     xr: { screen: 'home' },
   },
@@ -240,7 +245,10 @@ export const STEPS = [
     id: 'S5-2',
     chapter: 'outro',
     caption: { speaker: 'customer', text: '이대로 진행하고 싶어요' },
-    auto: 15000,
+    target: 'restart',
+    hint: '다시 체험하기',
+    quiet: true,
+    auto: 25000,
     next: 'reset',
     tablet: { screen: 'ending', pano: 'kitchen_front' },
     xr: { screen: 'ending', report: true },
@@ -252,8 +260,30 @@ export const FIRST_STEP = STEPS[0].id;
 
 export const stepIndex = (id) => STEP[id]?.index ?? -1;
 
+const emptyStats = () => ({ misses: 0, traceTries: 0 });
+
 export function createFlow(now = Date.now()) {
-  return { step: FIRST_STEP, enteredAt: now, timerAt: null, choices: { island: null, floor: null } };
+  return { step: FIRST_STEP, enteredAt: now, timerAt: null, choices: { island: null, floor: null }, stats: emptyStats() };
+}
+
+/** 대상 외 화면을 어둡게 할지. 전체 공간·상담 내용을 봐야 하는 단계는 하이라이트만 */
+export const coachDim = (step) => step.dim ?? /^(tool|nav|category):/.test(step.target ?? '');
+
+export const STAT_KEYS = ['misses', 'traceTries'];
+
+/**
+ * 엔딩 보상: 별 3개와 칭호.
+ *  ★1 상담 완주 · ★2 고객 취향 반영(마호가니 아떼 선택) · ★3 막힘 없이 진행(헛탭 2번 이하)
+ */
+export function rewardFor(flow) {
+  const stars = [
+    { key: 'done', label: '상담 완주', ok: true },
+    { key: 'taste', label: '고객 취향 반영', ok: flow.choices.island === 'b' },
+    { key: 'smooth', label: '막힘 없이 진행', ok: (flow.stats?.misses ?? 0) <= 2 },
+  ];
+  const count = stars.filter((s) => s.ok).length;
+  const title = ['', '신입 위브 매니저', '센스 있는 위브 매니저', '베테랑 위브 매니저'][count];
+  return { stars, count, title };
 }
 
 function enter(flow, id, choices, now) {
@@ -263,6 +293,7 @@ function enter(flow, id, choices, now) {
     enteredAt: now,
     timerAt: step.startsTimer && !flow.timerAt ? now : flow.timerAt,
     choices,
+    stats: { ...emptyStats(), ...flow.stats },
   };
 }
 
@@ -295,11 +326,11 @@ export function jumpFlow(flow, id, now = Date.now()) {
   if (i > stepIndex('S3-1c')) choices.island = flow.choices.island ?? 'b';
   if (i > stepIndex('S4-1c')) choices.floor = flow.choices.floor ?? 'portland';
   const timerAt = i >= stepIndex('S2-1') ? (flow.timerAt ?? now) : null;
-  return { step: id, enteredAt: now, timerAt, choices };
+  return { step: id, enteredAt: now, timerAt, choices, stats: i === 0 ? emptyStats() : { ...emptyStats(), ...flow.stats } };
 }
 
-/** 이 단계에서 지금까지의 주석을 지워야 하는가(체크 단계 이전으로 돌아갈 때) */
-export const clearsStrokes = (id) => stepIndex(id) <= stepIndex('S2-2c');
+/** 이 단계로 바로 이동할 때 주석을 지워야 하는가(체크 단계 이전, 또는 아일랜드를 놓은 뒤) */
+export const clearsStrokes = (id) => stepIndex(id) <= stepIndex('S2-2c') || stepIndex(id) > stepIndex('S3-1c');
 
 /** XR(고객) 화면에 띄울 장면 { pano, island, floor } — 대기·부팅 화면이면 pano = null. now = 서버 시각(sideAfter 판단) */
 export function xrSceneFor(flow, now = Infinity) {

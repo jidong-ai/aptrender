@@ -6,6 +6,7 @@
 // 메시지(클라이언트 → 서버)
 //  flow { from, action, value }  가이드 플로우 진행(scenario.js의 nextStep으로 검증)
 //  jump { step }                 직원용 단계 이동
+//  stat { key }                  엔딩 보상용 기록(misses 헛탭, traceTries 체크 시도)
 //  patch { managerView }         태블릿 시점 공유(10Hz)
 //  stroke:start|append|end|erase 주석
 //  reset · ping · sync
