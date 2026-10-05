@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { clamp, dirFromYawPitch, vFovFromH, wrapYaw } from './angles.js';
+import { clamp, dirFromYawPitch, vFovFromH, wrapYaw, yawPitchFromDir } from './angles.js';
 
 const RADIUS = 500;
 const FADE_MS = 800;
@@ -7,7 +7,7 @@ const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 const easeOut = (t) => 1 - (1 - t) ** 3;
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
 
-export const LAYER_SLOTS = ['island', 'floor']; // 아래에서 위 순서로 겹친다
+export const LAYER_SLOTS = ['floor', 'island']; // 아래에서 위 순서로 겹친다(바닥재 누끼는 아일랜드 없이 렌더)
 const DROP = 1.2 / 180; // 배치 연출: 오브제가 1.2°만큼 위에서 내려앉는다(구 uv 단위)
 const EFFECT_MS = { place: 1100, paint: 1300, remove: 450, swap: 350 };
 
@@ -236,7 +236,7 @@ export class PanoViewer {
   }
 
   fillStack(stack, scene) {
-    stack.base.material.map = scene.base;
+    stack.base.material.map = scene.base ?? null;
     stack.base.material.needsUpdate = true;
     for (const slot of LAYER_SLOTS) {
       Object.assign(stack.layers[slot], { opacity: 1, reveal: 2, glow: 0, drop: 0, anim: null });
@@ -356,7 +356,56 @@ export class PanoViewer {
     this.overlay.visible = Boolean(texture);
   }
 
+  /**
+   * 돌리 전환: 대상 방향으로 고개를 돌리며 살짝 확대한다(공간 이동 직전 연출). 끝나면 resolve.
+   * 이어서 showStack으로 다음 공간을 띄우고 resetZoom()으로 시야각을 되돌린다
+   */
+  dolly({ yaw, pitch }, ms = 650) {
+    const from = { yaw: this.yaw, pitch: this.pitch, fov: this.fovValue };
+    const to = { yaw: from.yaw + wrapYaw(yaw - from.yaw), pitch: Math.max(-20, pitch * 0.4), fov: from.fov * 0.72 };
+    this.zoomBack = from.fov;
+    const start = performance.now();
+    return new Promise((resolve) => {
+      const off = this.onFrame((dt, now) => {
+        const t = clamp01((now - start) / ms);
+        const e = ease(t);
+        this.yaw = wrapYaw(from.yaw + (to.yaw - from.yaw) * e);
+        this.pitch = from.pitch + (to.pitch - from.pitch) * e;
+        this.fovValue = from.fov + (to.fov - from.fov) * e;
+        if (t >= 1) {
+          off();
+          resolve();
+        }
+      });
+    });
+  }
+
+  resetZoom(ms = 700) {
+    if (this.zoomBack === undefined) return;
+    const from = this.fovValue;
+    const to = this.zoomBack;
+    this.zoomBack = undefined;
+    if (ms <= 0) {
+      this.fovValue = to;
+      return;
+    }
+    const start = performance.now();
+    const off = this.onFrame((dt, now) => {
+      const t = clamp01((now - start) / ms);
+      this.fovValue = from + (to - from) * easeOut(t);
+      if (t >= 1) off();
+    });
+  }
+
   // ---------- 화면 좌표 ----------
+
+  /** 화면 좌표(CSS px, 캔버스 기준) → 방향 */
+  unproject(x, y) {
+    const w = this.container.clientWidth;
+    const h = this.container.clientHeight;
+    const v = new THREE.Vector3((x / w) * 2 - 1, -(y / h) * 2 + 1, 0.5).unproject(this.camera);
+    return yawPitchFromDir(v.x, v.y, v.z);
+  }
 
   /** 방향 → 화면 좌표(CSS px). behind = 카메라 뒤쪽 */
   project(yaw, pitch) {

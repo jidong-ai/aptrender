@@ -8,10 +8,24 @@
   <body class="xr">
     <!-- ① 공간: 파노라마는 화면 전체를 채운다 -->
     <div class="view" id="view"></div>
-    <!-- ③ 매니저 시선 라벨·화살표 (화면 좌표) -->
+    <!-- ③ 매니저 시선 라벨·화살표, 공간에 붙는 라벨 (화면 좌표) -->
     <div class="mgr-layer" id="mgrLayer"></div>
-    <!-- ②④ UI 레이어용 1920×1080 무대. 화면 비율이 달라도(맥북 16:10) 같은 구도로 축소·중앙 배치 (D3~) -->
-    <div class="stage" id="stage"></div>
+    <div class="mgr-layer" id="anchors"></div>
+    <!-- ②④ UI 레이어용 1920×1080 무대. 화면 비율이 달라도(맥북 16:10) 같은 구도로 축소·중앙 배치 -->
+    <div class="stage" id="stage">
+      <!-- XR 상담홈(Figma 1045:1708): 옵션변경 알약 · 하단 메뉴 3 · 타이머 -->
+      <div class="home" id="home" hidden>
+        <div class="xr-pill" id="xrPill"></div>
+        <div class="xr-timer" id="xrTimer"></div>
+        <nav class="xr-nav" id="xrNav"></nav>
+      </div>
+      <!-- 이하 wire: XR UI/UX 가이드를 받으면 디자인 -->
+      <div class="subtitle" id="subtitle" hidden><b id="subSpeaker"></b><span id="subText"></span></div>
+      <aside class="price" id="price" hidden></aside>
+      <div class="standby" id="standby" hidden></div>
+      <div class="boot" id="boot" hidden></div>
+      <div class="report" id="report" hidden></div>
+    </div>
     <script type="module" src="/src/xr/main.js"></script>
   </body>
 </html>

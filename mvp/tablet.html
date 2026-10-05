@@ -11,39 +11,58 @@
     <title>Weave · 태블릿</title>
   </head>
   <body class="tablet">
+    <!-- 파노라마(화면 전체) -->
     <div class="view" id="view"></div>
+    <!-- 공간에 붙는 표시: 바닥 화살표, 치수, 체크 위치 (화면 px) -->
+    <div class="anchor-layer" id="anchors"></div>
 
-    <!-- 디자인 없이 회색 버튼만. 실제 UI는 D4에 Figma 기준으로 교체 -->
-    <div class="toolbar">
-      <div class="group" role="group" aria-label="시점">
-        <span class="group-label">시점</span>
-        <button type="button" data-spot="v1">정면</button>
-        <button type="button" data-spot="v2">측면</button>
+    <!-- UI: Figma 매니저 프레임(2264×1292) 좌표. 화면 높이에 맞춰 축소하고, 좌우는 화면 폭만큼 늘어난다 -->
+    <div class="ui" id="ui">
+      <section class="start" id="start">
+        <div class="start-bg" id="startBg"></div>
+        <div class="start-body">
+          <div class="start-logo" id="startLogo"></div>
+          <p class="start-desc">스캔한 우리 집 위에서 바로 보는 인테리어 상담.<br />오늘은 위브 매니저가 되어 고객의 주방을 제안해 보세요.</p>
+          <button type="button" class="start-btn" data-target="start">상담 서비스 체험하기<span id="startArrow"></span></button>
+        </div>
+      </section>
+
+      <div class="caption" id="caption" hidden>
+        <span class="caption-speaker" id="captionSpeaker"></span>
+        <p class="caption-text" id="captionText"></p>
+        <button type="button" class="caption-next" id="captionNext" data-target="caption-next">다음</button>
       </div>
-      <div class="group" role="group" aria-label="아일랜드">
-        <span class="group-label">아일랜드</span>
-        <button type="button" data-island="none">없음</button>
-        <button type="button" data-island="1">1</button>
-        <button type="button" data-island="2">2</button>
-        <button type="button" data-island="3">3</button>
+
+      <div class="tools" id="tools"></div>
+      <div class="annotate-bar" id="annotateBar" hidden></div>
+
+      <div class="card" id="card" hidden>
+        <header class="card-head" id="cardHead"></header>
+        <div class="card-body" id="cardBody"></div>
       </div>
-      <div class="group" role="group" aria-label="바닥재">
-        <span class="group-label">바닥재</span>
-        <button type="button" data-floor="base">기존</button>
-        <button type="button" data-floor="a">A</button>
-        <button type="button" data-floor="b">B</button>
-        <button type="button" data-floor="c">C</button>
+
+      <div class="loading" id="loading" hidden>
+        <div class="loading-ring"></div>
+        <p>김민선 씨 XR 헤드셋을 착용중</p>
+        <span>잠시만 기다려 주세요</span>
       </div>
+
+      <div class="timer" id="timer"></div>
+      <nav class="nav" id="nav"></nav>
+
+      <section class="ending" id="ending" hidden></section>
     </div>
 
-    <div class="corner">
-      <div class="readout" id="readout"></div>
-      <div class="debug">
-        <button type="button" id="grid" aria-pressed="false">방위 격자</button>
-        <button type="button" id="drop">5초 끊기</button>
-        <button type="button" id="reset">리셋</button>
-      </div>
+    <!-- 가이드: 눌러야 할 곳만 밝게 + 펄스 링 + 지시문 -->
+    <div class="coach" id="coach" hidden>
+      <div class="coach-hole" id="coachHole"></div>
+      <div class="coach-label" id="coachLabel"></div>
     </div>
+
+    <!-- 직원용: 왼쪽 위를 2초 길게 누르기 -->
+    <div class="staff-zone" id="staffZone"></div>
+    <div class="staff" id="staff" hidden></div>
+    <div class="idle" id="idle" hidden></div>
 
     <script type="module" src="/src/tablet/main.js"></script>
   </body>

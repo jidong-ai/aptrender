@@ -26,12 +26,12 @@ function connect(role) {
   return {
     ws,
     send: (msg) => ws.send(JSON.stringify(msg)),
-    next(type, pred = () => true) {
+    next(type, pred = () => true, ms = 2000) {
       const match = (m) => m.type === type && pred(m);
       const i = queue.findIndex(match);
       if (i >= 0) return Promise.resolve(queue.splice(i, 1)[0]);
       return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error(`${role}: '${type}' 메시지를 받지 못함`)), 2000);
+        const timer = setTimeout(() => reject(new Error(`${role}: '${type}' 메시지를 받지 못함`)), ms);
         waiters.push({ match, resolve: (m) => (clearTimeout(timer), resolve(m)) });
       });
     },
@@ -44,55 +44,74 @@ test('접속하면 hello와 전체 스냅샷을 받는다', async () => {
   const hello = await xr.next('hello');
   assert.equal(hello.role, 'xr');
   const snap = await xr.next('snapshot');
-  assert.equal(snap.state.island, 'none');
-  assert.equal(snap.state.floor, 'base');
-  assert.deepEqual(snap.state.spot, { manager: 'v1', customer: 'v1' });
+  assert.equal(snap.state.flow.step, 'S0-0');
+  assert.deepEqual(snap.state.flow.choices, { island: null, floor: null });
   assert.deepEqual(snap.state.strokes, []);
   await xr.close();
 });
 
-test('태블릿의 patch가 XR에 중계된다', async () => {
+test('태블릿의 flow 입력이 검증된 뒤 XR에 다음 단계로 중계된다', async () => {
   const tablet = connect('tablet');
   const xr = connect('xr');
   await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
 
-  tablet.send({ type: 'patch', patch: { island: '2' } });
-  const msg = await xr.next('patch');
-  assert.deepEqual(msg.patch, { island: '2' });
-  assert.equal(server.getState().island, '2');
+  tablet.send({ type: 'flow', from: 'S0-0', action: 'start' });
+  const msg = await xr.next('flow');
+  assert.equal(msg.flow.step, 'S0-1');
 
+  tablet.send({ type: 'flow', from: 'S0-1', action: 'hotspot' }); // 대상이 아님
+  assert.match((await tablet.next('error')).message, /받을 수 없는/);
+  tablet.send({ type: 'flow', from: 'S0-0', action: 'start' }); // 늦게 도착한 중복 탭
+  assert.match((await tablet.next('error')).message, /지난 단계/);
+  assert.equal(server.getState().flow.step, 'S0-1');
+
+  tablet.send({ type: 'reset' });
+  await xr.next('snapshot', (m) => m.reason === 'reset');
   await Promise.all([tablet.close(), xr.close()]);
 });
 
-test('허용되지 않은 값은 반영하지 않고 error로 알린다', async () => {
+test('patch는 managerView만 받는다', async () => {
   const tablet = connect('tablet');
-  const { state } = await tablet.next('snapshot');
-  tablet.send({ type: 'patch', patch: { floor: 'z', strokes: [] } });
+  await tablet.next('snapshot');
+  tablet.send({ type: 'patch', patch: { flow: {}, strokes: [] } });
   const err = await tablet.next('error');
-  assert.match(err.message, /floor/);
+  assert.match(err.message, /flow/);
   assert.match(err.message, /strokes/);
-  assert.equal(server.getState().floor, state.floor);
   await tablet.close();
 });
 
-test('끊긴 동안 바뀐 상태를 재접속 스냅샷으로 받는다', async () => {
+test('직원용 jump: 선택을 채우고 모두에게 스냅샷, 끊긴 화면은 재접속 때 복구', async () => {
   const tablet = connect('tablet');
   let xr = connect('xr');
   await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
-  tablet.send({ type: 'patch', patch: { island: '1' } });
-  await xr.next('patch');
+  await xr.close();
 
-  await xr.close(); // XR 끊김
-  tablet.send({ type: 'patch', patch: { island: '3', floor: 'b', spot: { manager: 'v2', customer: 'v2' } } });
-  await tablet.next('patch', (m) => m.patch.island === '3');
+  tablet.send({ type: 'jump', step: 'S4-1a' });
+  const snap = await tablet.next('snapshot', (m) => m.reason === 'jump');
+  assert.deepEqual(snap.state.flow.choices, { island: 'b', floor: null });
 
-  xr = connect('xr'); // XR 재접속
-  const snap = await xr.next('snapshot');
-  assert.equal(snap.state.island, '3');
-  assert.equal(snap.state.floor, 'b');
-  assert.deepEqual(snap.state.spot, { manager: 'v2', customer: 'v2' });
+  xr = connect('xr');
+  const again = await xr.next('snapshot');
+  assert.equal(again.state.flow.step, 'S4-1a');
 
+  tablet.send({ type: 'jump', step: 'nope' });
+  assert.match((await tablet.next('error')).message, /알 수 없는 단계/);
+  tablet.send({ type: 'reset' });
+  await xr.next('snapshot', (m) => m.reason === 'reset');
   await Promise.all([tablet.close(), xr.close()]);
+});
+
+test('로딩 단계(S1)는 서버가 시간이 되면 자동으로 넘긴다', async () => {
+  const tablet = connect('tablet');
+  await tablet.next('snapshot');
+  tablet.send({ type: 'jump', step: 'S1' });
+  await tablet.next('snapshot', (m) => m.reason === 'jump');
+  const msg = await tablet.next('flow', () => true, 5000);
+  assert.equal(msg.flow.step, 'S2-1');
+  assert.ok(msg.flow.timerAt);
+  tablet.send({ type: 'reset' });
+  await tablet.next('snapshot', (m) => m.reason === 'reset');
+  await tablet.close();
 });
 
 test('주석 stroke 시작·추가·종료·삭제가 상태와 중계에 반영된다', async () => {
@@ -102,7 +121,7 @@ test('주석 stroke 시작·추가·종료·삭제가 상태와 중계에 반영
 
   const stroke = { id: 't-1', tool: 'pen', width: 2, color: '#ff3b30', pts: [[10, 5]] };
   tablet.send({ type: 'stroke:start', stroke });
-  assert.deepEqual((await xr.next('stroke:start')).stroke, { ...stroke, spot: 'v1' }); // spot 생략 시 v1
+  assert.deepEqual((await xr.next('stroke:start')).stroke, { ...stroke, pano: 'kitchen_front' }); // pano 생략 시 주방 정면
 
   tablet.send({ type: 'stroke:append', id: 't-1', pts: [[11, 5], [12, 6]] });
   await xr.next('stroke:append');
@@ -113,21 +132,6 @@ test('주석 stroke 시작·추가·종료·삭제가 상태와 중계에 반영
   tablet.send({ type: 'stroke:erase', id: 't-1' });
   await xr.next('stroke:erase');
   assert.equal(server.getState().strokes.length, 0);
-
-  await Promise.all([tablet.close(), xr.close()]);
-});
-
-test('reset은 모든 화면에 초기 상태 스냅샷을 보낸다', async () => {
-  const tablet = connect('tablet');
-  const xr = connect('xr');
-  await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
-  tablet.send({ type: 'patch', patch: { island: '2', dims: true } });
-  await xr.next('patch');
-
-  tablet.send({ type: 'reset' });
-  const snap = await xr.next('snapshot', (m) => m.reason === 'reset');
-  assert.equal(snap.state.island, 'none');
-  assert.equal(snap.state.dims, false);
 
   await Promise.all([tablet.close(), xr.close()]);
 });
@@ -157,41 +161,29 @@ test('managerView는 부분 갱신되고 범위를 벗어난 값은 보정된다
 test('파노라마 목록: 원본·built 폴더를 이름 규칙·별칭으로 찾고, 누끼는 뺀다', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pano-'));
   fs.mkdirSync(path.join(dir, 'built'));
-  for (const f of ['pano_front.png', 'pano_side.jpg', 'island_a.png', 'island_a_cut.png', 'v2_island1_floora_8k.jpg', 'notes.txt']) fs.writeFileSync(path.join(dir, f), '');
+  for (const f of ['pano_front.png', 'pano_side.jpg', 'island_a.png', 'island_a_cut.png', 'store_1_8k.jpg', 'notes.txt']) fs.writeFileSync(path.join(dir, f), '');
   for (const f of ['pano_front_4k.jpg', 'pano_front_8k.jpg', 'pano_side_4k.jpg']) fs.writeFileSync(path.join(dir, 'built', f), '');
   assert.deepEqual(listPanos(dir), {
-    v1_none_base: { '4k': '/assets/pano/built/pano_front_4k.jpg', '8k': '/assets/pano/built/pano_front_8k.jpg' }, // PNG보다 built JPG
-    v2_none_base: { '4k': '/assets/pano/built/pano_side_4k.jpg', '8k': '/assets/pano/pano_side.jpg' },
-    v2_2_base: { '8k': '/assets/pano/island_a.png' },
-    v2_1_a: { '8k': '/assets/pano/v2_island1_floora_8k.jpg' },
+    kitchen_front: { '4k': '/assets/pano/built/pano_front_4k.jpg', '8k': '/assets/pano/built/pano_front_8k.jpg' }, // PNG보다 built JPG
+    kitchen_side: { '4k': '/assets/pano/built/pano_side_4k.jpg', '8k': '/assets/pano/pano_side.jpg' },
+    island_a_side: { '8k': '/assets/pano/island_a.png' },
+    store_1: { '8k': '/assets/pano/store_1_8k.jpg' },
   });
   fs.rmSync(dir, { recursive: true });
   const res = await fetch(`http://localhost:${server.port}/api/panos`);
   assert.deepEqual((await res.json()).panos, listPanos());
 });
 
-test('spot은 매니저·고객을 따로 갱신할 수 있고, 잘못된 시점은 거부된다', async () => {
-  const tablet = connect('tablet');
-  const xr = connect('xr');
-  await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
-  tablet.send({ type: 'patch', patch: { spot: { customer: 'v2' } } });
-  await xr.next('patch', (m) => m.patch.spot);
-  assert.equal(server.getState().spot.customer, 'v2');
-  tablet.send({ type: 'patch', patch: { spot: { manager: 'v9' } } });
-  assert.match((await tablet.next('error')).message, /spot/);
-  await Promise.all([tablet.close(), xr.close()]);
-});
-
 test('레이어 목록: manifest에 있고 파일이 실제로 있는 것만', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pano-'));
   fs.mkdirSync(path.join(dir, 'built', 'layers'), { recursive: true });
-  fs.writeFileSync(path.join(dir, 'built', 'layers', 'v2_2_base_4k.webp'), '');
+  fs.writeFileSync(path.join(dir, 'built', 'layers', 'island_b_side_4k.webp'), '');
   fs.writeFileSync(
     path.join(dir, 'built', 'layers', 'manifest.json'),
-    JSON.stringify({ layers: { v2_2_base: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': 'built/layers/v2_2_base_4k.webp', '8k': 'built/layers/v2_2_base_8k.webp' } } } }),
+    JSON.stringify({ layers: { island_b_side: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': 'built/layers/island_b_side_4k.webp', '8k': 'built/layers/island_b_side_8k.webp' } } } }),
   );
   assert.deepEqual(listLayers(dir), {
-    v2_2_base: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': '/assets/pano/built/layers/v2_2_base_4k.webp' } },
+    island_b_side: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': '/assets/pano/built/layers/island_b_side_4k.webp' } },
   });
   assert.deepEqual(listLayers(path.join(dir, 'nope')), {});
   fs.rmSync(dir, { recursive: true });

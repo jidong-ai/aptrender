@@ -13,9 +13,12 @@
     "start": "vite build && node server/index.js --prod",
     "test": "node --test test/*.test.js",
     "pano:prep": "node scripts/prep-pano.mjs",
-    "pano:clean": "node -e \"require('fs').rmSync('assets/pano/built',{recursive:true,force:true});console.log('assets/pano/built 삭제 완료 (npm run pano:prep으로 다시 만들 수 있음)')\""
+    "pano:clean": "node -e \"require('fs').rmSync('assets/pano/built',{recursive:true,force:true});console.log('assets/pano/built 삭제 완료 (npm run pano:prep으로 다시 만들 수 있음)')\"",
+    "ui:fetch": "node scripts/fetch-figma-assets.mjs",
+    "docs:scenario": "node scripts/scenario-doc.mjs"
   },
   "dependencies": {
+    "pretendard": "^1.3.9",
     "qrcode-terminal": "^0.12.0",
     "sirv": "^3.0.2",
     "three": "^0.186.1",

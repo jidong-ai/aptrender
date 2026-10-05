@@ -25,6 +25,7 @@ export function createSync({ role }) {
     peers: {},
     tabletUrl: null,
     heldUntil: 0,
+    clockOffset: 0, // 서버 시계 - 내 시계(ms). 단계 시각·타이머를 서버 기준으로 계산
   };
   const emitInfo = () => emit('info', info);
   const setStatus = (status) => {
@@ -115,6 +116,7 @@ export function createSync({ role }) {
         bootId = msg.bootId;
         info.clientId = msg.id;
         info.tabletUrl = msg.tabletUrl;
+        if (typeof msg.now === 'number') info.clockOffset = msg.now - Date.now();
         return;
 
       case 'snapshot':
@@ -178,6 +180,8 @@ export function createSync({ role }) {
       return () => listeners.get(event).delete(fn);
     },
     send,
+    /** 서버 시계 기준 지금(ms) */
+    serverNow: () => Date.now() + info.clockOffset,
     patch: (patch) => send({ type: 'patch', patch }),
     reset: () => send({ type: 'reset' }),
     /** 재접속 테스트: 지금 연결을 끊고 ms 동안 다시 붙지 않는다. */

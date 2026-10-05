@@ -1,26 +1,25 @@
-import { makeTestPano } from './test-pano.js';
-import { describeScene, sceneKey } from './scene.js';
+import { makePlaceholderLayer, makeTestPano } from './test-pano.js';
+import { LAYERS, PANOS, PLACEHOLDER_RECT, layerIdFor } from './scene.js';
+import { FLOORS, ISLANDS } from './catalog.js';
 
-// 렌더가 없는 시점은 바닥재마다 색조만 다른 테스트 파노라마로 대신한다.
-const TINTS = { base: '#e4e4e4', a: '#dcbcb2', b: '#b4c3dc', c: '#b8d6c7' };
+// 렌더가 없는 장면의 테스트 격자 색
+const TINTS = { store_1: '#e3ddd3', store_2: '#ddd6ca', counsel: '#d6dbe0', kitchen_front: '#e4e4e4', kitchen_side: '#dcdcdc' };
+const ISLAND_TINT = { a: '#e8e4dc', b: '#5a2f22', c: '#b08a5e' };
 
-export const MODE_TEXT = {
-  layers: '배경 고정 + 레이어',
-  full: '렌더 통째 교체(npm run pano:prep 필요)',
-  missing: '렌더 준비 중(배경 유지)',
-  test: '테스트 격자',
+// 화면에 동시에 올려 두는 묶음(장). 장이 바뀌면 다른 장의 텍스처를 내린다(아이패드·아이맥 메모리 보호)
+const CHAPTERS = {
+  opening: ['store_1', 'store_2', 'counsel'],
+  main: ['kitchen_front', 'kitchen_side', ...Object.keys(LAYERS).map((id) => `layer:${id}`)],
 };
+const chapterOf = (pano) => (CHAPTERS.opening.includes(pano) ? 'opening' : 'main');
+
+export const PART_TEXT = { render: '렌더', cut: '누끼', full: '통째 렌더', wire: '와이어프레임', test: '테스트 격자' };
 
 /**
- * /api/panos 목록을 받아 이 화면에 맞는 크기로 전부 미리 불러온다.
+ * /api/panos 목록을 받아, 지금 장(chapter)에 필요한 파노라마·레이어를 한 장씩 불러온다.
  *  - size: '4k'(태블릿) | '8k'(XR). 원하는 크기가 없으면 다른 크기로 대체
  *  - maxWidth: 텍스처 최대 가로 픽셀. 넘으면 줄여서 올린다
- *
- * 장면을 보여주는 방식(status)
- *  - layers : 시점의 기본 배경(아일랜드 없음·기존 바닥) 위에 오려낸 레이어를 겹친다. 공간은 그대로, 오브제·자재만 바뀐다
- *  - full   : 레이어가 아직 없고 해당 조합의 렌더만 있음 → 렌더를 통째로 교체
- *  - missing: 배경은 있지만 이 조합의 렌더가 없음 → 배경만 유지
- *  - test   : 이 시점의 배경 렌더가 없음 → 테스트 격자
+ * 렌더가 없으면 테스트 격자, 누끼가 없으면 와이어프레임 레이어로 대신해서 모든 단계가 끊기지 않는다.
  */
 export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) {
   let catalog = {};
@@ -34,17 +33,12 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
   const other = size === '4k' ? '8k' : '4k';
   const pick = (sizes) => (sizes[size] ? { url: sizes[size], size } : { url: sizes[other], size: other });
   const entries = new Map();
-  for (const [key, sizes] of Object.entries(catalog)) entries.set(key, { key, ...pick(sizes) });
-  for (const [key, layer] of Object.entries(layers)) entries.set(`layer:${key}`, { key: `layer:${key}`, ...pick(layer.files), rect: layer.rect });
-  if (!entries.size) log('assets/pano에 렌더가 없음 → 테스트 격자로 표시');
+  for (const [id, sizes] of Object.entries(catalog)) entries.set(id, { key: id, ...pick(sizes) });
+  for (const [id, layer] of Object.entries(layers)) entries.set(`layer:${id}`, { key: `layer:${id}`, ...pick(layer.files), rect: layer.rect });
+  if (!entries.size) log('assets/pano에 렌더가 없음 → 테스트 격자·와이어프레임으로 표시');
 
-  // 한 장씩 차례로 불러온다(메모리 급증 방지). 지금 필요한 장은 순서를 앞당긴다. 배경을 레이어보다 먼저
   const loads = new Map(); // key -> Promise<Texture|null>
-  // 레이어로 대신할 수 있는 통째 렌더는 미리 불러오지 않는다(아이패드·아이맥 메모리 절약)
-  const coveredByLayer = (key) => layers[key] && catalog[`${key.split('_')[0]}_none_base`];
-  const queue = [...entries.values()]
-    .filter((e) => !coveredByLayer(e.key))
-    .sort((a, b) => a.key.startsWith('layer:') - b.key.startsWith('layer:'));
+  let queue = [];
   let running = false;
 
   function load(entry) {
@@ -73,7 +67,23 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
     while (queue.length) await load(queue.shift());
     running = false;
   }
-  setTimeout(pump, 0); // 화면에 띄울 장면이 먼저 순서를 당길 수 있게 한 박자 늦게 시작
+
+  let chapter = null;
+  // 이 장의 파일을 차례로 불러오고, 다른 장의 텍스처는 내린다
+  function focusChapter(name) {
+    if (name === chapter) return;
+    chapter = name;
+    const keep = new Set(CHAPTERS[name]);
+    for (const [key, p] of loads) {
+      if (keep.has(key)) continue;
+      loads.delete(key);
+      setTimeout(() => p.then((t) => t?.dispose()), 3000); // 크로스페이드가 끝난 뒤에 내린다
+    }
+    // 레이어로 대신할 수 있는 통째 렌더는 불러오지 않는다
+    const wanted = CHAPTERS[name].filter((key) => entries.has(key) && !(LAYERS[key] && layers[key]));
+    queue = wanted.map((key) => entries.get(key));
+    setTimeout(pump, 0); // 지금 띄울 장면이 먼저 순서를 당길 수 있게 한 박자 늦게 시작
+  }
 
   function get(key) {
     const entry = entries.get(key);
@@ -82,107 +92,109 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
     if (i >= 0) queue.splice(i, 1);
     return load(entry);
   }
-  async function layer(key) {
-    const texture = await get(`layer:${key}`);
-    return texture ? { texture, rect: layers[key].rect } : null;
+
+  const made = new Map();
+  const once = (key, fn) => (made.has(key) ? made.get(key) : (made.set(key, fn()), made.get(key)));
+  const testTexture = (pano) =>
+    once(`test:${pano}`, () => viewer.canvasTexture(makeTestPano({ tint: TINTS[pano], label: `${PANOS[pano]?.name ?? pano} · 렌더 없음` })));
+  function wireLayer(kind, option) {
+    return once(`wire:${kind}:${option}`, () => {
+      const rect = PLACEHOLDER_RECT[kind];
+      const label = kind === 'island' ? `아일랜드 ${option.toUpperCase()} · ${ISLANDS[option]?.name ?? ''}` : `바닥재 · ${FLOORS[option]?.name ?? option}`;
+      const color = kind === 'island' ? ISLAND_TINT[option] : FLOORS[option]?.swatch;
+      return { texture: viewer.canvasTexture(makePlaceholderLayer({ kind, rect, label, color })), rect };
+    });
   }
 
-  const tests = new Map();
-  function testTexture(spot, island, floor) {
-    const key = sceneKey(spot, island, floor);
-    if (!tests.has(key)) {
-      const canvas = makeTestPano({ tint: TINTS[floor], label: `${describeScene(spot, island, floor)} · 렌더 없음` });
-      tests.set(key, viewer.canvasTexture(canvas));
+  // 레이어 하나 → { layer, part }
+  async function resolveLayer(pano, kind, option) {
+    if (!option) return { layer: null, part: null };
+    const id = layerIdFor(pano, kind, option);
+    if (id && layers[id]) {
+      const texture = await get(`layer:${id}`);
+      if (texture) return { layer: { texture, rect: layers[id].rect }, part: 'cut' };
     }
-    return tests.get(key);
+    return { layer: wireLayer(kind, option), part: 'wire' };
   }
-
-  function status(spot, island, floor) {
-    const full = sceneKey(spot, island, floor);
-    if (!catalog[sceneKey(spot, 'none', 'base')]) return catalog[full] ? 'full' : 'test';
-    const needIsland = island !== 'none' && !layers[sceneKey(spot, island, 'base')];
-    const needFloor = floor !== 'base' && !layers[full];
-    if (!needIsland && !needFloor) return 'layers';
-    return catalog[full] ? 'full' : 'missing';
-  }
-
-  let gridOverlay = null;
 
   return {
     catalog,
     layers,
-    status,
-    /** 이 조합을 실제 렌더로 보여줄 수 있는가(버튼 점선 표시용) */
-    available: (spot, island, floor) => ['layers', 'full'].includes(status(spot, island, floor)),
-    /** 장면 → { mode, base, island, floor } (island·floor = 오려낸 레이어 또는 null) */
-    async sceneFor(spot, island, floor) {
-      const mode = status(spot, island, floor);
-      const full = sceneKey(spot, island, floor);
-      if (mode === 'test') return { mode, base: testTexture(spot, island, floor), island: null, floor: null };
-      if (mode === 'full') return { mode, base: (await get(full)) ?? testTexture(spot, island, floor), island: null, floor: null };
-      const [base, islandLayer, floorLayer] = await Promise.all([
-        get(sceneKey(spot, 'none', 'base')),
-        island !== 'none' ? layer(sceneKey(spot, island, 'base')) : null,
-        floor !== 'base' ? layer(full) : null,
-      ]);
-      return { mode, base: base ?? testTexture(spot, island, floor), island: islandLayer, floor: floorLayer };
+    /** 장면 { pano, island, floor } → { base, island, floor, parts } */
+    async sceneFor({ pano, island = null, floor = null }) {
+      if (!pano) return { base: null, island: null, floor: null, parts: {} };
+      focusChapter(chapterOf(pano));
+      const islandId = layerIdFor(pano, 'island', island);
+      // 누끼는 없고 아일랜드 통째 렌더만 있으면(바닥재 변경 전) 그 렌더를 배경으로 쓴다
+      if (islandId && !layers[islandId] && catalog[islandId] && !floor) {
+        const full = await get(islandId);
+        if (full) return { base: full, island: null, floor: null, parts: { base: 'render', island: 'full' } };
+      }
+      const [base, i, f] = await Promise.all([catalog[pano] ? get(pano) : null, resolveLayer(pano, 'island', island), resolveLayer(pano, 'floor', floor)]);
+      return {
+        base: base ?? testTexture(pano),
+        island: i.layer,
+        floor: f.layer,
+        parts: { base: base ? 'render' : 'test', island: i.part, floor: f.part },
+      };
     },
     /** 실제 파노라마 위에 겹쳐 보는 방위 격자(투명 배경) */
     gridOverlay() {
-      gridOverlay ??= viewer.canvasTexture(makeTestPano({ transparent: true }));
-      return gridOverlay;
+      return once('grid', () => viewer.canvasTexture(makeTestPano({ transparent: true })));
     },
   };
 }
 
+const sceneKey = (s) => `${s.pano}|${s.island}|${s.floor}`;
+
 /**
- * 장면(시점·아일랜드·바닥재)을 받아 화면에 반영한다. 두 화면 공용.
- *  - 시점이 바뀌면 장면 전체를 크로스페이드
- *  - 같은 시점이면 배경은 그대로 두고 레이어만 연출과 함께 바꾼다(아일랜드 = 배치, 바닥재 = 칠하기)
+ * 장면 { pano, island, floor }을 화면에 반영한다. 두 화면 공용.
+ *  - 공간(pano)이 바뀌면 크로스페이드
+ *  - 같은 공간이면 배경은 그대로 두고 레이어만 연출과 함께 바꾼다(아일랜드 = 배치, 바닥재 = 발밑부터 칠하기)
  * 목록을 받기 전에 들어온 장면은 기억해 뒀다가 준비되면 바로 띄운다.
  */
 export function createScenePlayer(viewer, { onChange = () => {}, ...options }) {
-  let panos = null;
+  let set = null;
   let pending = null;
   let token = 0;
-  let current = null; // { spot, island, floor, scene }
+  let current = null; // { want, scene }
   const player = {
-    mode: '-',
-    get panos() {
-      return panos;
+    parts: {},
+    get current() {
+      return current?.want ?? null;
     },
-    async show(spot, island, floor, { delay = 0 } = {}) {
-      pending = [spot, island, floor];
-      if (!panos) return;
-      const key = sceneKey(spot, island, floor);
-      if (current && key === sceneKey(current.spot, current.island, current.floor)) return;
+    async show(want, { delay = 0, fadeMs } = {}) {
+      pending = [want, { delay, fadeMs }];
+      if (!set) return;
+      if (current && sceneKey(current.want) === sceneKey(want)) return;
       const mine = ++token;
-      const scene = await panos.sceneFor(spot, island, floor);
+      const scene = await set.sceneFor(want);
       if (mine !== token) return;
 
       const prev = current;
-      current = { spot, island, floor, scene };
-      player.mode = scene.mode;
+      current = { want: { ...want }, scene };
+      player.parts = scene.parts;
       onChange(player);
 
-      const sameSpace = prev && prev.spot === spot && prev.scene.base === scene.base && prev.scene.mode !== 'full' && scene.mode !== 'full';
+      const sameSpace = prev && prev.want.pano === want.pano && prev.scene.base === scene.base && scene.base;
       if (!sameSpace) {
-        viewer.showStack(scene, { fadeMs: prev ? undefined : 0 });
+        viewer.showStack(scene, { fadeMs: prev?.scene.base ? fadeMs : 0 });
         return;
       }
       if (prev.scene.island?.texture !== scene.island?.texture) {
-        viewer.setLayer('island', scene.island, { effect: prev.island !== island ? 'place' : 'swap', delay });
+        viewer.setLayer('island', scene.island, { effect: scene.island ? 'place' : 'swap', delay });
       }
       if (prev.scene.floor?.texture !== scene.floor?.texture) {
-        viewer.setLayer('floor', scene.floor, { effect: prev.floor !== floor ? 'paint' : 'swap', delay });
+        viewer.setLayer('floor', scene.floor, { effect: scene.floor ? 'paint' : 'swap', delay });
       }
     },
   };
-  player.ready = createPanoSet(viewer, options).then((set) => {
-    panos = set;
+  player.ready = createPanoSet(viewer, options).then((s) => {
+    set = s;
+    player.set = s;
     onChange(player);
     if (pending) player.show(...pending);
-    return set;
+    return s;
   });
   return player;
 }

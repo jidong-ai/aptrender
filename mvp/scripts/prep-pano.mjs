@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { FLOORS, ISLANDS, SPOTS, parsePanoFile, sceneKey } from '../src/shared/scene.js';
+import { LAYERS, parsePanoFile } from '../src/shared/scene.js';
 
 const DIR = fileURLToPath(new URL('../assets/pano/', import.meta.url));
 const BUILT = path.join(DIR, 'built');
@@ -51,32 +51,24 @@ const cuts = {};
 for (const file of files) {
   const parsed = parsePanoFile(file);
   if (parsed?.cut) {
-    cuts[parsed.key] = file;
+    cuts[parsed.id] = file;
     continue;
   }
   if (!parsed || parsed.size !== '8k') continue;
   const stem = file.replace(/(_8k)?\.[a-z]+$/i, ''); // pano_front.png → pano_front
   await convert(file, `${stem}_4k.jpg`, 4096, 88);
   if (/\.png$/i.test(file)) await convert(file, `${stem}_8k.jpg`, 8192, 90);
-  if (!sources[parsed.key] || /\.png$/i.test(file)) sources[parsed.key] = file;
+  if (!sources[parsed.id] || /\.png$/i.test(file)) sources[parsed.id] = file;
 }
 
 // ---------- 3) 레이어 ----------
+// 레이어 = scene.js의 LAYERS. 누끼(_cut.png)가 기본, --auto면 "레이어 렌더 − 배경 렌더" 차이로 자동 오려내기
+// 바닥재 렌더는 아일랜드 없이 하므로 둘 다 같은 배경과 비교한다
 const pairs = [];
-for (const spot of SPOTS) {
-  for (const island of ISLANDS.filter((i) => i !== 'none')) {
-    const withIsland = sceneKey(spot, island, 'base');
-    const base = sources[sceneKey(spot, 'none', 'base')];
-    if (base && (cuts[withIsland] || (auto && sources[withIsland]))) {
-      pairs.push({ key: withIsland, kind: 'island', cut: cuts[withIsland], from: base, to: sources[withIsland] });
-    }
-    for (const floor of FLOORS.filter((f) => f !== 'base')) {
-      const withFloor = sceneKey(spot, island, floor);
-      if (base && (cuts[withFloor] || (auto && sources[withFloor] && sources[withIsland]))) {
-        pairs.push({ key: withFloor, kind: 'floor', cut: cuts[withFloor], from: sources[withIsland], to: sources[withFloor] });
-      }
-    }
-  }
+for (const [id, def] of Object.entries(LAYERS)) {
+  const base = sources[def.pano];
+  if (base && (cuts[id] || (auto && sources[id]))) pairs.push({ key: id, kind: def.kind, cut: cuts[id], from: base, to: sources[id] });
+  else if (cuts[id] && !base) console.log(`  ! ${cuts[id]}: 배경 ${def.pano} 렌더가 없어 레이어를 만들 수 없습니다`);
 }
 
 let manifest = { version: 1, layers: {} };

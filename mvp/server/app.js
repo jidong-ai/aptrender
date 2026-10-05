@@ -13,6 +13,7 @@ import {
   sanitizeStroke,
 } from '../src/shared/protocol.js';
 import { parsePanoFile } from '../src/shared/scene.js';
+import { STEP, clearsStrokes, jumpFlow, nextStep } from '../src/shared/scenario.js';
 import { getLanAddresses } from './lan.js';
 
 export const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -34,7 +35,7 @@ export function listPanos(dir = PANO_DIR) {
       const parsed = parsePanoFile(file);
       if (!parsed || parsed.cut) continue; // 누끼는 레이어 재료라 목록에 넣지 않는다
       const rel = sub ? `${sub}/${file}` : file;
-      const entry = (panos[parsed.key] ??= {});
+      const entry = (panos[parsed.id] ??= {});
       const prev = entry[parsed.size];
       if (prev && rank(prev.replace('/assets/pano/', '')) <= rank(rel)) continue;
       entry[parsed.size] = `/assets/pano/${rel.split('/').map(encodeURIComponent).join('/')}`;
@@ -147,6 +148,16 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
       res.end(JSON.stringify({ panos: listPanos(), layers: listLayers() }));
       return;
     }
+    if (pathname === '/api/ui') {
+      // Figma에서 받은 UI 에셋 목록(assets/ui/figma). 없는 파일은 화면이 와이어프레임 아이콘으로 대신한다
+      let files = [];
+      try {
+        files = fs.readdirSync(path.join(ASSETS, 'ui', 'figma')).filter((f) => !f.startsWith('.'));
+      } catch {}
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache' });
+      res.end(JSON.stringify({ files }));
+      return;
+    }
     const page = PAGES[pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname];
     if (page && mode !== 'api') {
       sendPage(page, req, res).catch((err) => {
@@ -193,6 +204,41 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
     const [lan] = getLanAddresses();
     return lan ? `http://${lan.address}:${port}/tablet` : null;
   };
+
+  // ---------- 가이드 플로우 ----------
+  // 자동으로 넘어가는 단계(로딩·엔딩)는 서버가 시간을 잰다. 재접속해도 같은 시점에 넘어간다
+  let autoTimer = 0;
+  function armAuto() {
+    clearTimeout(autoTimer);
+    const step = STEP[state.flow.step];
+    if (!step.auto) return;
+    const wait = Math.max(0, state.flow.enteredAt + step.auto - Date.now());
+    const from = step.id;
+    autoTimer = setTimeout(() => advance(null, { from, action: 'auto' }), wait);
+  }
+
+  function resetAll(who, reason = 'reset') {
+    state = createInitialState();
+    rev += 1;
+    broadcast({ type: 'snapshot', rev, state, reason });
+    armAuto();
+    log(`${who} → ${reason} (rev ${rev})`);
+  }
+
+  // client = null이면 서버 자신(자동 진행)
+  function advance(client, msg) {
+    const who = client ? `${client.role}#${client.id}` : 'server';
+    const result = nextStep(state.flow, msg);
+    if (result.error) return result.error;
+    if (result.reset) {
+      resetAll(who);
+      return null;
+    }
+    commit(client ?? { id: 0 }, { type: 'flow', flow: result.flow });
+    armAuto();
+    log(`${who} → ${msg.action}${msg.value ? `(${msg.value})` : ''} · ${msg.from} → ${result.flow.step} (rev ${rev})`);
+    return null;
+  }
 
   function commit(client, change) {
     if (!applyChange(state, change)) return false;
@@ -259,11 +305,26 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
         return;
       }
 
-      case 'reset':
-        state = createInitialState();
+      case 'flow': {
+        if (typeof msg.from !== 'string' || typeof msg.action !== 'string' || msg.action === 'auto') return reject('flow 형식이 올바르지 않습니다.');
+        const error = advance(client, { from: msg.from, action: msg.action, value: typeof msg.value === 'string' ? msg.value : undefined });
+        if (error) reject(error);
+        return;
+      }
+
+      case 'jump': {
+        const flow = typeof msg.step === 'string' && jumpFlow(state.flow, msg.step);
+        if (!flow) return reject(`알 수 없는 단계: ${msg.step}`);
+        state.flow = flow;
+        if (clearsStrokes(flow.step)) state.strokes = [];
         rev += 1;
-        broadcast({ type: 'snapshot', rev, state, reason: 'reset' });
-        return log(`${who} → reset (rev ${rev})`);
+        broadcast({ type: 'snapshot', rev, state, reason: 'jump' });
+        armAuto();
+        return log(`${who} → jump ${flow.step} (rev ${rev})`);
+      }
+
+      case 'reset':
+        return resetAll(who);
 
       default:
         return reject(`알 수 없는 메시지: ${msg?.type}`);
@@ -281,7 +342,7 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
     ws.isAlive = true;
 
     // 접속·재접속 모두 같은 순서: hello → 전체 스냅샷
-    send(ws, { type: 'hello', id: client.id, role: client.role, bootId, tabletUrl: tabletUrl() });
+    send(ws, { type: 'hello', id: client.id, role: client.role, bootId, now: Date.now(), tabletUrl: tabletUrl() });
     send(ws, { type: 'snapshot', rev, state });
     broadcast({ type: 'peers', peers: peerCounts() });
     log(`+ ${client.role}#${client.id} 접속 (${client.addr}) · ${peerSummary()}`);
@@ -321,6 +382,7 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
 
   async function close() {
     clearInterval(heartbeat);
+    clearTimeout(autoTimer);
     for (const ws of clients.keys()) ws.close(1001, 'server shutdown');
     wss.close();
     await vite?.close();

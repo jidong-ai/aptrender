@@ -74,3 +74,55 @@ export function makeTestPano({ width = 4096, tint = '#d8d8d8', label = '', trans
   }
   return canvas;
 }
+
+/**
+ * 렌더·누끼가 아직 없을 때 쓰는 와이어프레임 레이어(투명 배경 캔버스). rect 크기 비율에 맞춰 그린다.
+ *  - island: 이름표가 달린 상자(정면에서 본 아일랜드 자리)
+ *  - floor : 반투명 색 + 타일 격자(바닥 전체)
+ */
+export function makePlaceholderLayer({ kind, rect, label, color = '#8a6a4f', width = 1024 }) {
+  const aspect = ((rect[2] - rect[0]) * 2) / (rect[3] - rect[1]); // 파노라마는 가로:세로 2:1
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = Math.max(8, Math.round(width / aspect));
+  const g = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  if (kind === 'floor') {
+    g.fillStyle = color;
+    g.globalAlpha = 0.55;
+    g.fillRect(0, 0, W, H);
+    g.globalAlpha = 0.35;
+    g.strokeStyle = '#fff';
+    g.lineWidth = 2;
+    const step = W / 72;
+    for (let x = 0; x <= W; x += step) g.strokeRect(x, 0, step, H);
+    for (let y = 0; y <= H; y += step) g.strokeRect(0, y, W, step);
+  } else {
+    const pad = W * 0.06;
+    g.fillStyle = color;
+    g.globalAlpha = 0.82;
+    g.fillRect(pad, H * 0.3, W - pad * 2, H * 0.62);
+    g.globalAlpha = 1;
+    g.strokeStyle = '#fff';
+    g.lineWidth = W * 0.008;
+    g.setLineDash([W * 0.03, W * 0.02]);
+    g.strokeRect(pad, H * 0.3, W - pad * 2, H * 0.62);
+    g.setLineDash([]);
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    g.fillRect(pad, H * 0.22, W - pad * 2, H * 0.1); // 상판
+  }
+  if (label) {
+    const size = Math.round((kind === 'floor' ? H * 0.06 : H * 0.12) * 1);
+    g.font = `700 ${size}px Pretendard, -apple-system, sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineWidth = size * 0.2;
+    g.strokeStyle = 'rgba(0,0,0,0.55)';
+    const y = kind === 'floor' ? H * 0.5 : H * 0.6;
+    g.strokeText(label, W / 2, y);
+    g.fillStyle = '#fff';
+    g.fillText(label, W / 2, y);
+  }
+  return canvas;
+}

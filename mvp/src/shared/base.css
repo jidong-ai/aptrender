@@ -1,4 +1,23 @@
-/* 인터넷 없이 동작해야 하므로 웹폰트를 쓰지 않는다(시스템 폰트만). */
+/* 폰트: Pretendard(npm 패키지를 번들, 인터넷 불필요). main.js에서 불러온다.
+   색·효과 토큰 = Figma 변수(Blue/Grey/Orange, XR/glass) */
+:root {
+  --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  --blue-200: #1aa0ff;
+  --blue-300: #205ba5;
+  --blue-400: #003270;
+  --grey-10: #f4f4f4;
+  --grey-50: #eeeeee;
+  --grey-200: #8c8c8c;
+  --grey-400: #696969;
+  --grey-600: #3f3f3f;
+  --grey-700: #313131;
+  --orange-100: #ff460e;
+  /* XR/glass 10 · glass 100 · glass navy (inner shadow) */
+  --glass-10: inset 4px 4px 20px 5px rgb(255 255 255 / 0.15), inset -4px -4px 20px 5px rgb(255 255 255 / 0.15);
+  --glass-100: inset 4px 4px 20px 5px rgb(255 255 255 / 0.3), inset -4px -4px 20px 5px rgb(255 255 255 / 0.3);
+  --glass-navy: inset 4px 4px 20px 5px rgb(32 91 165 / 0.15), inset -4px -4px 20px 5px rgb(32 91 165 / 0.15);
+}
+
 *,
 *::before,
 *::after {
@@ -12,7 +31,7 @@ body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  font-family: var(--font);
   background: #1e1e1e;
   color: #f2f2f2;
   -webkit-text-size-adjust: 100%;

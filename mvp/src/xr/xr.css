@@ -1,7 +1,11 @@
+:root {
+  --s: 1; /* 1920×1080 무대 대비 축소 비율. main.js가 <html>에 갱신 */
+}
+
 .xr {
   overflow: hidden;
+  font-family: var(--font);
   background: #2a2a2a; /* 파노라마가 뜨기 전 */
-  --s: 1; /* 1920×1080 무대 대비 축소 비율. main.js가 갱신 */
 }
 
 /* 전시 상태(HUD 숨김)에서는 마우스 커서도 숨긴다 */
@@ -118,4 +122,319 @@
 .change-chip.show {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+
+/* ---------- XR 상담홈 크롬 (Figma 1045:1708, 1920×1080 무대 좌표) ---------- */
+.home {
+  position: absolute;
+  inset: 0;
+}
+
+.ico {
+  --ico: 44px;
+  display: inline-flex;
+  width: var(--ico);
+  height: var(--ico);
+  flex: none;
+}
+
+.ico svg,
+.ico img {
+  width: 100%;
+  height: 100%;
+}
+
+.xr-pill {
+  position: absolute;
+  left: 50%;
+  top: 72px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 32px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.3);
+  box-shadow: var(--glass-10);
+  backdrop-filter: blur(40px);
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.xr-nav {
+  position: absolute;
+  left: 50%;
+  top: 905px;
+  transform: translateX(-50%);
+  width: 491px;
+  height: 127px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.3);
+  box-shadow: var(--glass-10);
+  backdrop-filter: blur(40px);
+}
+
+.xr-nav span.item {
+  width: 75px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.xr-nav span.item.on {
+  color: #dff1ff;
+}
+
+.xr-timer {
+  position: absolute;
+  left: 50%;
+  top: 845px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.35);
+}
+
+/* ---------- wire: 자막 ---------- */
+.subtitle {
+  position: absolute;
+  left: 50%;
+  bottom: 270px;
+  transform: translateX(-50%);
+  max-width: 1300px;
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  padding: 16px 30px;
+  border-radius: 20px;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.subtitle b {
+  flex: none;
+  font-size: 22px;
+  color: #9fd3ff;
+}
+
+.subtitle[data-speaker='customer'] b {
+  color: #ffb59e;
+}
+
+/* ---------- wire: 적용 제품·예상 금액 ---------- */
+.price {
+  position: absolute;
+  right: 60px;
+  top: 220px;
+  width: 400px;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgb(255 255 255 / 0.3);
+  box-shadow: var(--glass-10);
+  backdrop-filter: blur(40px);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.price h4 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.price .item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.price .item small {
+  font-size: 15px;
+  opacity: 0.8;
+}
+
+.price .item b {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.price .total {
+  margin-top: 6px;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.price .total.bump {
+  animation: bump 0.7s ease;
+}
+
+.price .note {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+@keyframes bump {
+  30% {
+    transform: scale(1.08);
+    color: #dff1ff;
+  }
+}
+
+/* ---------- wire: 대기·부팅·리포트 ---------- */
+.standby,
+.boot,
+.report {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  color: #fff;
+  text-align: center;
+}
+
+.standby {
+  background: radial-gradient(circle at 50% 40%, #1f3a5f, #0b1626 70%);
+}
+
+.standby .logo {
+  font-size: 96px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.standby p,
+.boot p {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 600;
+}
+
+.standby small,
+.boot small {
+  font-size: 22px;
+  opacity: 0.7;
+}
+
+.boot {
+  background: #0b1626;
+}
+
+.boot .bar {
+  width: 520px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.15);
+  overflow: hidden;
+}
+
+.boot .bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--blue-200);
+  animation: fill 3.2s ease-out forwards;
+}
+
+@keyframes fill {
+  to {
+    width: 100%;
+  }
+}
+
+.report {
+  background: rgb(0 20 50 / 0.55);
+}
+
+.report .card {
+  width: 760px;
+  padding: 40px;
+  border-radius: 32px;
+  background: rgb(255 255 255 / 0.3);
+  box-shadow: var(--glass-10);
+  backdrop-filter: blur(40px);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: rise 0.7s ease both;
+}
+
+.report h2 {
+  margin: 0;
+  font-size: 40px;
+}
+
+.report .row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 24px;
+}
+
+.report .total {
+  font-size: 40px;
+  font-weight: 700;
+}
+
+.report q {
+  font-size: 28px;
+  opacity: 0.9;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+/* 공간 라벨: '매니저' 체크, 치수 */
+.anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+.space-label span {
+  display: inline-block;
+  transform: translate(-50%, -150%);
+  padding: 0.3em 0.8em;
+  border-radius: 999px;
+  background: rgb(20 20 20 / 0.6);
+  color: #fff;
+  font-size: calc(24px * var(--s));
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.space-label.mgr span {
+  background: var(--orange-100);
 }
