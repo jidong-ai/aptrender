@@ -142,7 +142,7 @@ export const STEPS = [
     target: 'caption-next',
     hint: '다음',
     tablet: { pano: 'kitchen_front' },
-    xr: { screen: 'home', side: true, sideAfter: 2500 }, // 정면 배치 연출과 고객 대사를 본 뒤 측면으로
+    xr: { screen: 'home' }, // 고객 대사만. 측면 전환은 '다음'을 누른 뒤(S3-3a부터)
   },
   {
     id: 'S3-3a',
@@ -151,7 +151,7 @@ export const STEPS = [
     target: 'nav:detail',
     hint: '상담상세',
     tablet: { pano: 'kitchen_front' },
-    xr: { screen: 'home' },
+    xr: { screen: 'home', side: true }, // 고객이 아일랜드 측면(안쪽)을 보는 동안 후보를 고른다
   },
   {
     id: 'S3-3b',
@@ -160,7 +160,7 @@ export const STEPS = [
     target: 'detail:island',
     hint: '아일랜드 적용제품',
     tablet: { pano: 'kitchen_front', panel: 'detail' },
-    xr: { screen: 'home' },
+    xr: { screen: 'home', side: true }, // 고객이 아일랜드 측면(안쪽)을 보는 동안 후보를 고른다
   },
   {
     id: 'S3-3c',
@@ -171,7 +171,7 @@ export const STEPS = [
     hint: '제품 하나를 골라 주세요',
     set: (value) => ({ island: value }),
     tablet: { pano: 'kitchen_front', panel: 'detail', expand: 'island' },
-    xr: { screen: 'home' },
+    xr: { screen: 'home', side: true }, // 고객이 아일랜드 측면(안쪽)을 보는 동안 후보를 고른다
   },
   // ---------- 4 바닥재 ----------
   {
@@ -336,7 +336,7 @@ export const clearsStrokes = (id) => stepIndex(id) <= stepIndex('S2-2c') || step
 export function xrSceneFor(flow, now = Infinity) {
   const step = STEP[flow.step];
   if (step.xr.screen === 'standby' || step.xr.screen === 'boot') return { pano: null, island: null, floor: null };
-  if (step.xr.side && now - flow.enteredAt >= (step.xr.sideAfter ?? 0)) return { pano: 'kitchen_side', island: flow.choices.island, floor: null };
+  if (step.xr.side && (!step.xr.sideAfter || now - flow.enteredAt >= step.xr.sideAfter)) return { pano: 'kitchen_side', island: flow.choices.island, floor: null };
   return { pano: 'kitchen_front', island: flow.choices.island, floor: flow.choices.floor };
 }
 

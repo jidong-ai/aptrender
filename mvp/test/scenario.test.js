@@ -59,11 +59,12 @@ test('단계 이동은 건너뛴 선택을 기본값으로 채운다', () => {
   assert.equal(jumpFlow(flow, 'S9'), null);
 });
 
-test('XR은 S3-2에서만 측면, 대기·부팅에는 장면 없음', () => {
+test('XR은 S3-2 다음을 누른 뒤(S3-3a~c) 측면, 대기·부팅에는 장면 없음', () => {
   const base = createFlow(0);
   assert.equal(xrSceneFor(base).pano, null);
-  assert.deepEqual(xrSceneFor(jumpFlow(base, 'S3-2', 0)), { pano: 'kitchen_side', island: 'b', floor: null });
-  assert.equal(xrSceneFor(jumpFlow(base, 'S3-2', 0), 1000).pano, 'kitchen_front'); // 대사를 먼저 보고 2.5초 뒤 측면
+  assert.equal(xrSceneFor(jumpFlow(base, 'S3-2', 0)).pano, 'kitchen_front'); // 고객 대사 단계는 정면 그대로
+  assert.deepEqual(xrSceneFor(jumpFlow(base, 'S3-3a', 0)), { pano: 'kitchen_side', island: 'b', floor: null }); // '다음'을 누르면 측면
+  assert.equal(xrSceneFor(jumpFlow(base, 'S3-3c', 0)).pano, 'kitchen_side');
   assert.equal(tabletSceneFor(jumpFlow(base, 'S3-2', 0)).pano, 'kitchen_front');
   assert.deepEqual(xrSceneFor(jumpFlow(base, 'S5-1', 0)), { pano: 'kitchen_front', island: 'b', floor: 'portland' });
 });

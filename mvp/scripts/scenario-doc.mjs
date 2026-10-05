@@ -37,7 +37,7 @@ const rows = STEPS.map((s) => {
     const sample = s.set(fixed ? s.values?.[0] : '선택값');
     next += ` → ${Object.entries(sample).map(([k, v]) => `${k}=${v}`).join(', ')}`;
   }
-  const xr = `${XR[s.xr.screen]}${s.xr.side ? ` · **XR만 측면**(${s.xr.sideAfter / 1000}초 뒤)` : ''}${s.xr.dims ? ' · 치수선' : ''}`;
+  const xr = `${XR[s.xr.screen]}${s.xr.side ? ' · **XR만 측면**' : ''}${s.xr.dims ? ' · 치수선' : ''}`;
   return `| ${s.id} | ${tablet} | ${caption} | ${next} | ${xr} |`;
 });
 
