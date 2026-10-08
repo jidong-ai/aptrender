@@ -3,7 +3,10 @@ import fs from 'node:fs';
 import { SPEAKERS, STEPS } from '../src/shared/scenario.js';
 
 const TARGET = {
-  start: '체험하기 버튼',
+  start: "CTA '시작하기'",
+  'prologue-next': '화면 아무 곳이나 탭',
+  'prologue-start': "CTA '상담 플로우 시작하기'",
+  restart: "CTA '다시 체험하기'",
   'caption-next': '캡션 다음',
   hotspot: '바닥 화살표',
   trace: '점선 체크 따라 그리기',
@@ -25,12 +28,12 @@ const TARGET = {
 const PANEL = { loading: '로딩 카드', ohouse: '오늘의집 카드', catalog: '카탈로그', detail: '상담상세', options: '옵션수정', summary: '상담 요약' };
 const XR = { standby: '대기 화면', boot: '부팅', ending: '리포트 카드 + 엔딩', home: '상담홈' };
 
-const esc = (t) => t.replace(/\|/g, '\\|');
+const esc = (t) => t.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
 const rows = STEPS.map((s) => {
   const t = s.tablet;
   const tablet =
-    t.screen === 'start' ? '시작화면' : t.screen === 'ending' ? '엔딩' : `${t.pano}${t.panel ? ` + ${PANEL[t.panel]}${t.expand ? '(후보 펼침)' : ''}` : ''}${t.annotate ? ' + 주석 도구' : ''}`;
-  const caption = s.caption ? `${SPEAKERS[s.caption.speaker]}: ${esc(s.caption.text)}` : '—';
+    t.screen === 'start' ? '시작화면(Figma 1433:3379)' : t.screen === 'prologue' ? `프롤로그 ${t.page}장(Figma ${['1433:3453', '1433:3463', '1433:3469'][t.page - 1]})` : t.screen === 'ending' ? '엔딩' : `${t.pano}${t.panel ? ` + ${PANEL[t.panel]}${t.expand ? '(후보 펼침)' : ''}` : ''}${t.annotate ? ' + 주석 도구' : ''}`;
+  const caption = s.caption ? `${SPEAKERS[s.caption.speaker]}${s.caption.speaker === 'guide' ? '(안내)' : ''}: ${esc(s.caption.text)}` : s.copy ? `(본문) ${esc(s.copy)}` : '—';
   let next = s.auto ? `자동 ${s.auto / 1000}초${s.next === 'reset' ? ' → 처음으로' : ''}` : `${TARGET[s.target] ?? s.target}${s.look ? ' (60° 둘러보기 또는 6초 뒤 열림)' : ''}`;
   if (s.set) {
     const fixed = s.values?.length === 1 || !s.values;
@@ -45,7 +48,9 @@ const md = `# 체험 단계표 (게임형 가이드 플로우)
 
 > 이 표는 \`src/shared/scenario.js\`에서 만든다. 문구·순서를 바꾸려면 scenario.js를 고친 뒤 \`npm run docs:scenario\`.
 
-- 화자: **안내**는 태블릿에만, **매니저**·**김민선 고객**은 XR 자막에도 나온다
+- 캡션 말풍선(Figma 1433:3440 · 1434:3719): **매니저형**(사진·이름·대사·» 화살표, 파란 톤)과 **김민선형**(갈색 톤) 두 가지. 안내 문구와 매니저 대사는 매니저형, 고객 대사는 김민선형. 매니저·고객 대사는 XR 자막에도 나온다
+- 말풍선을 누르면 다음으로(» 화살표가 움직여 알려 줌). 'CTA button'(시작하기·상담 플로우 시작하기·적용하기·상담 리포트 보내기·다시 체험하기)은 이미 색으로 강조되므로 가이드 링을 띄우지 않는다
+- 프롤로그는 '< Prologue'로 이전 장으로 돌아갈 수 있다
 - "다음 조건"의 대상만 누를 수 있다. 다른 버튼은 막히고 대상이 흔들린다. 파노라마 드래그는 항상 허용
 - 선택 결과(아일랜드·바닥재)는 \`flow.choices\`에 쌓이고 XR 장면·예상 금액에 반영된다
 - 직원 메뉴(태블릿 왼쪽 위 2초 길게 누르기)·아이맥 ←/→ 키로 아무 단계나 바로 갈 수 있다

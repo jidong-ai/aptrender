@@ -9,6 +9,9 @@
 //  set      다음 단계로 넘어갈 때 선택 상태에 더할 값
 //  auto     이 시간(ms)이 지나면 서버가 자동으로 넘긴다
 //  quiet    가이드 표시 없이 대상만 누를 수 있게(시작화면처럼 버튼이 이미 눈에 띌 때)
+//  cta      대상이 'CTA button' 컴포넌트(이미 색으로 강조됨) → 하이라이트하지 않는다
+//  back     프롤로그 '<' 버튼으로 돌아갈 단계
+//  copy     프롤로그 본문(캡션 말풍선 없이 화면 가운데 큰 글씨)
 //  dim      대상 외 화면을 어둡게 할지. 생략하면 작은 메뉴 버튼(tool:·nav:·category:)만 어둡게 한다
 //  clearStrokes  다음 단계로 넘어갈 때 주석을 지운다
 //  tablet   태블릿 화면: screen('start'|'pano'|'ending'), pano, panel(가운데 카드), annotate, dims
@@ -16,30 +19,66 @@
 
 import { FLOOR_OPTIONS, ISLAND_OPTIONS } from './scene.js';
 
-export const SPEAKERS = { guide: '안내', manager: '매니저', customer: '김민선 고객' };
+// guide = 선배 매니저(관람객을 안내), manager = 관람객이 맡은 매니저의 대사, customer = 고객 김민선
+// 캡션 디자인(Figma 1433:3440 · 1434:3719)은 매니저형·김민선형 두 가지: guide·manager → 매니저형, customer → 김민선형
+export const SPEAKERS = { guide: '매니저', manager: '매니저', customer: '김민선' };
 
 export const STEPS = [
-  // ---------- 0 오프닝 (매장) ----------
+  // ---------- 0 시작화면 · 프롤로그 (Figma 1434:3696) ----------
   {
     id: 'S0-0',
     chapter: 'opening',
     target: 'start',
-    hint: '눌러서 체험 시작',
-    quiet: true,
-    tablet: { screen: 'start', pano: 'store_1' },
+    hint: '시작하기',
+    cta: true,
+    tablet: { screen: 'start' },
     xr: { screen: 'standby' },
   },
   {
     id: 'S0-1',
+    chapter: 'prologue',
+    target: 'prologue-next',
+    back: 'S0-0',
+    hint: '화면을 눌러 계속',
+    quiet: true,
+    copy: '오늘의집 Weave는 소비자의 인테리어 결정을 도와주는 XR서비스에요',
+    tablet: { screen: 'prologue', page: 1 },
+    xr: { screen: 'standby' },
+  },
+  {
+    id: 'S0-2',
+    chapter: 'prologue',
+    target: 'prologue-next',
+    back: 'S0-1',
+    hint: '화면을 눌러 계속',
+    quiet: true,
+    copy: '소비자가 매장상담을 예약한 후, 꾸미고 싶은 공간을 3d 스캔해오면\n매장에서 오늘의집 매니저와 함께 공간을 완성해나가요',
+    tablet: { screen: 'prologue', page: 2 },
+    xr: { screen: 'standby' },
+  },
+  {
+    id: 'S0-3',
+    chapter: 'prologue',
+    target: 'prologue-start',
+    back: 'S0-2',
+    hint: '상담 플로우 시작하기',
+    cta: true,
+    copy: '오늘 당신은 오늘의집 위브 매니저입니다.\n고객의 XR 화면을 보며 상담을 진행해주세요!',
+    tablet: { screen: 'prologue', page: 3 },
+    xr: { screen: 'standby' },
+  },
+  // ---------- 0 오프닝 (매장) ----------
+  {
+    id: 'S0-4',
     chapter: 'opening',
-    caption: { speaker: 'guide', text: "안녕하세요 저는 오늘의집 위브 매니저입니다. 오늘 저 대신 '주방 부분 리모델링'을 희망하는 고객의 인테리어 상담을 진행해주실거에요" },
+    caption: { speaker: 'guide', text: '반갑습니다! Weave 매장 첫 출근을 축하드려요.\n오늘 주방 인테리어 상담을 맡으셨다구요?' },
     target: 'caption-next',
     hint: '다음',
     tablet: { pano: 'store_1' },
     xr: { screen: 'standby' },
   },
   {
-    id: 'S0-2a',
+    id: 'S0-5a',
     chapter: 'opening',
     caption: { speaker: 'guide', text: '아일랜드 설치를 희망하셔서, 김민선씨가 미리 업로드해주신 주방 3d스캔본 위에서 캡션 안내에 따라 공간을 제안해주세요' },
     target: 'hotspot',
@@ -48,7 +87,7 @@ export const STEPS = [
     xr: { screen: 'standby' },
   },
   {
-    id: 'S0-2b',
+    id: 'S0-5b',
     chapter: 'opening',
     caption: { speaker: 'guide', text: '상담실에서 김민선 씨가 기다리고 있어요' },
     target: 'hotspot',
@@ -197,6 +236,7 @@ export const STEPS = [
     chapter: 'floor',
     caption: { speaker: 'manager', text: '기존 주방에서 중앙에 들어오는 아일랜드가 조금 튀어보이네요. 어두운 타일자재를 사용하면 톤을 맞추면서도 주방 청소가 용이해요' },
     target: 'apply',
+    cta: true,
     hint: '적용하기',
     set: () => ({ floor: 'portland' }),
     tablet: { pano: 'kitchen_front', panel: 'options', chipPicked: true },
@@ -237,6 +277,7 @@ export const STEPS = [
     chapter: 'outro',
     caption: { speaker: 'guide', text: '상담 내용을 정리해 김민선 씨에게 보내 주세요' },
     target: 'send-report',
+    cta: true,
     hint: '상담 리포트 보내기',
     tablet: { pano: 'kitchen_front', panel: 'summary' },
     xr: { screen: 'home' },
@@ -246,8 +287,8 @@ export const STEPS = [
     chapter: 'outro',
     caption: { speaker: 'customer', text: '이대로 진행하고 싶어요' },
     target: 'restart',
+    cta: true,
     hint: '다시 체험하기',
-    quiet: true,
     auto: 25000,
     next: 'reset',
     tablet: { screen: 'ending', pano: 'kitchen_front' },
@@ -265,6 +306,9 @@ const emptyStats = () => ({ misses: 0, traceTries: 0 });
 export function createFlow(now = Date.now()) {
   return { step: FIRST_STEP, enteredAt: now, timerAt: null, choices: { island: null, floor: null }, stats: emptyStats() };
 }
+
+/** 가이드 링을 띄우지 않는 단계: quiet, CTA 버튼(이미 색으로 강조), 캡션 화살표(화살표가 움직여 알려 줌) */
+export const coachQuiet = (step) => Boolean(step.quiet || step.cta || step.target === 'caption-next');
 
 /** 대상 외 화면을 어둡게 할지. 전체 공간·상담 내용을 봐야 하는 단계는 하이라이트만 */
 export const coachDim = (step) => step.dim ?? /^(tool|nav|category):/.test(step.target ?? '');
@@ -306,6 +350,10 @@ export function nextStep(flow, msg, now = Date.now()) {
   const step = STEP[flow.step];
   if (!step) return { error: `알 수 없는 단계: ${flow.step}` };
   if (msg.from !== flow.step) return { error: `이미 지난 단계의 입력(${msg.from} ≠ ${flow.step})` };
+  if (msg.action === 'back') {
+    if (!step.back) return { error: `${step.id}에서는 뒤로 갈 수 없습니다` };
+    return { flow: enter(flow, step.back, flow.choices, now) };
+  }
   if (msg.action === 'auto') {
     if (!step.auto) return { error: `${step.id}는 자동으로 넘어가지 않습니다` };
   } else {

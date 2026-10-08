@@ -1,7 +1,7 @@
 // 태블릿 UI 조각: Figma 컴포넌트(상단 도구, 하단 메뉴, 타이머, 상담 카드 패널)와 와이어프레임 화면.
 // 모든 버튼에는 data-target(가이드 대상 이름)을 단다. 누를 수 있는지는 coach.js가 정한다.
 import { FLOORS, FLOOR_CHIPS, FLOOR_CHIP_SELECTED, ISLANDS, estimate, won } from '../shared/catalog.js';
-import { icon, picture, hasAsset } from '../shared/ui-assets.js';
+import { icon, picture } from '../shared/ui-assets.js';
 import { confetti, countUp } from '../shared/celebrate.js';
 import { rewardFor } from '../shared/scenario.js';
 
@@ -46,16 +46,6 @@ export const mmss = (ms) => {
   const s = Math.max(0, Math.floor(ms / 1000));
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
-
-export function buildStart(bg, logo, arrow) {
-  bg.append(picture('start-store.png', '매장 이미지 (Figma 에셋 받기 전)'));
-  if (hasAsset('weave-logo.svg')) logo.append(h('img', { src: '/assets/ui/figma/weave-logo.svg', alt: 'Weave' }));
-  else {
-    logo.classList.add('is-wire');
-    logo.textContent = 'Weave';
-  }
-  arrow.replaceWith(icon('arrow'));
-}
 
 export function buildTools(el) {
   for (const t of TOOLS) el.append(h('button.pill', { type: 'button', dataset: { target: t.target } }, icon(t.icon), t.label));

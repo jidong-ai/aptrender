@@ -33,6 +33,13 @@ test('후보 선택이 최종 선택이 된다(아일랜드 c · 플로쏘)', ()
   assert.deepEqual(flow.choices, { island: 'c', floor: 'flosso' });
 });
 
+test('프롤로그는 뒤로 갈 수 있고, 매장 이후는 뒤로 갈 수 없다', () => {
+  const p2 = jumpFlow(createFlow(0), 'S0-2', 0);
+  assert.equal(nextStep(p2, { from: 'S0-2', action: 'back' }).flow.step, 'S0-1');
+  const store = jumpFlow(createFlow(0), 'S0-4', 0);
+  assert.match(nextStep(store, { from: 'S0-4', action: 'back' }).error, /뒤로/);
+});
+
 test('잘못된 입력은 거부된다', () => {
   const flow = createFlow(0);
   assert.match(nextStep(flow, { from: 'S0-0', action: 'nav:ohouse' }).error, /받을 수 없는/);
@@ -70,7 +77,7 @@ test('XR은 S3-2 다음을 누른 뒤(S3-3a~c) 측면, 대기·부팅에는 장�
 });
 
 test('모든 단계의 장면·레이어가 정의돼 있다', () => {
-  for (const s of STEPS) assert.ok(PANOS[s.tablet.pano], `${s.id} 태블릿 장면`);
+  for (const s of STEPS) if (!['start', 'prologue'].includes(s.tablet.screen)) assert.ok(PANOS[s.tablet.pano], `${s.id} 태블릿 장면`);
   for (const pano of ['kitchen_front', 'kitchen_side']) {
     for (const opt of ['a', 'b', 'c']) {
       const id = layerIdFor(pano, 'island', opt);

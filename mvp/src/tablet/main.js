@@ -7,13 +7,13 @@ import { PanoViewer } from '../shared/pano-viewer.js';
 import { attachLookControls } from '../shared/look-controls.js';
 import { PART_TEXT, createScenePlayer } from '../shared/pano-set.js';
 import { ANCHORS, PANOS } from '../shared/scene.js';
-import { SPEAKERS, STEP, STEPS, coachDim, stepIndex, tabletSceneFor } from '../shared/scenario.js';
+import { SPEAKERS, STEP, STEPS, coachDim, coachQuiet, stepIndex, tabletSceneFor } from '../shared/scenario.js';
 import { createAnchors, createSphereLines, interpolate } from '../shared/overlays.js';
 import { icon, loadUiAssets } from '../shared/ui-assets.js';
 import { wrapYaw } from '../shared/angles.js';
 import { createCoach } from './coach.js';
 import { coverage, createAnnotator } from './annotate.js';
-import { buildAnnotateBar, buildCardHead, buildNav, buildStart, buildTimer, buildTools, h, mmss, renderEnding, renderPanel } from './ui.js';
+import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, mmss, renderEnding, renderPanel } from './ui.js';
 
 const VIEW_SEND_MS = 100; // managerView 10Hz
 const FRAME_H = 1292; // Figma 매니저 프레임 높이
@@ -90,7 +90,6 @@ viewer.onFrame(() => queueView()); // 자동 회전(돌리·체크 자리로 돌
 viewer.onResize(() => queueView());
 
 // ---------- UI 조립 ----------
-buildStart($('startBg'), $('startLogo'), $('startArrow'));
 buildTools($('tools'));
 buildNav($('nav'));
 const timerText = buildTimer($('timer'));
@@ -218,8 +217,46 @@ function updateCoach(flow, step) {
     dragHint.hidden = false;
     return coach.clear();
   }
-  coach.ui(step.target, step.values, step.hint, { dim: coachDim(step), quiet: Boolean(step.quiet) });
+  coach.ui(step.target, step.values, step.hint, { dim: coachDim(step), quiet: coachQuiet(step) });
 }
+
+// ---------- 캡션 말풍선: 매니저형(guide·manager) / 김민선형(customer) ----------
+const CAPTION_LOOK = {
+  guide: { photo: '/assets/ui/figma/manager.jpg', next: '/assets/ui/figma/next-manager.svg' },
+  manager: { photo: '/assets/ui/figma/manager.jpg', next: '/assets/ui/figma/next-manager.svg' },
+  customer: { photo: '/assets/ui/figma/avatar.png', next: '/assets/ui/figma/next-customer.svg' },
+};
+let shownSpeaker = null;
+function renderCaption(cap, step, flow, stepChanged) {
+  const el = $('caption');
+  el.dataset.speaker = cap.speaker;
+  if (shownSpeaker !== cap.speaker) {
+    const look = CAPTION_LOOK[cap.speaker];
+    $('capAvatar').replaceChildren(h('img.photo', { src: look.photo, alt: '' }), h('img.ring', { src: '/assets/ui/figma/avatar-ring.svg', alt: '' }));
+    $('captionNext').src = look.next;
+    shownSpeaker = cap.speaker;
+  }
+  $('captionSpeaker').textContent = SPEAKERS[cap.speaker];
+  $('captionText').textContent = cap.text;
+  if (stepChanged) {
+    el.style.animation = 'none';
+    void el.offsetWidth; // 말풍선이 바뀔 때마다 다시 등장
+    el.style.animation = '';
+  }
+  setCaptionNext(step, flow);
+}
+// 말풍선 전체가 '다음' 버튼. 둘러보기 전(S2-1)에는 잠가 둔다
+function setCaptionNext(step, flow) {
+  const next = step.target === 'caption-next';
+  const locked = next && Boolean(step.look && !lookDone(flow));
+  $('captionNext').classList.toggle('is-off', !next);
+  $('captionNext').classList.toggle('is-locked', locked);
+  if (next && !locked) $('caption').dataset.target = 'caption-next';
+  else delete $('caption').dataset.target;
+}
+
+// 프롤로그 '<' : 이전 장으로(가이드 대상과 무관하게 언제나 누를 수 있다)
+$('proBack').addEventListener('click', () => act('back'));
 
 let stepEnteredLocal = 0;
 const lookDone = () => lookAcc >= LOOK_DEG || performance.now() - stepEnteredLocal >= LOOK_MS;
@@ -246,19 +283,22 @@ function render(state) {
   const inConsult = stepIndex(flow.step) >= stepIndex('S2-1');
 
   $('start').hidden = screen !== 'start';
+  $('prologue').hidden = screen !== 'prologue';
+  if (screen === 'prologue') {
+    $('prologue').dataset.page = t.page;
+    $('prologue').querySelector(`.pro-page[data-page="${t.page}"] .pro-text`).textContent = step.copy;
+    // 1·2장은 화면 아무 곳이나 눌러 넘기고, 3장은 CTA 버튼으로 시작
+    if (step.target === 'prologue-next') $('proFrame').dataset.target = 'prologue-next';
+    else delete $('proFrame').dataset.target;
+    $('proCta').hidden = step.target !== 'prologue-start';
+  }
   $('ending').hidden = screen !== 'ending';
   if (screen === 'ending' && stepChanged) renderEnding($('ending'), flow);
 
   // 캡션
   const cap = step.caption && screen !== 'ending' && screen !== 'start' ? step.caption : null;
   $('caption').hidden = !cap || t.panel === 'loading';
-  if (cap) {
-    $('caption').dataset.speaker = cap.speaker;
-    $('captionSpeaker').textContent = SPEAKERS[cap.speaker];
-    $('captionText').textContent = cap.text;
-    $('captionNext').hidden = step.target !== 'caption-next';
-    $('captionNext').disabled = Boolean(step.look && !lookDone(flow));
-  }
+  if (cap) renderCaption(cap, step, flow, stepChanged);
 
   // 상담 화면 크롬
   const chrome = inConsult && screen === 'pano';
@@ -323,8 +363,8 @@ setInterval(() => {
   const step = STEP[flow.step];
   if (step.look) {
     const done = lookDone(flow);
-    if ($('captionNext').disabled === done) {
-      $('captionNext').disabled = !done;
+    if ($('captionNext').classList.contains('is-locked') === done) {
+      setCaptionNext(step, flow);
       updateCoach(flow, step);
     }
   }

@@ -18,19 +18,49 @@
 
     <!-- UI: Figma 매니저 프레임(2264×1292) 좌표. 화면 높이에 맞춰 축소하고, 좌우는 화면 폭만큼 늘어난다 -->
     <div class="ui" id="ui">
+      <!-- 시작화면 (Figma 1433:3379) -->
       <section class="start" id="start">
-        <div class="start-bg" id="startBg"></div>
+        <img class="start-bg" src="/assets/ui/figma/start-bg.jpg" alt="" />
+        <div class="start-fade"></div>
         <div class="start-body">
-          <div class="start-logo" id="startLogo"></div>
-          <p class="start-desc">스캔한 우리 집 위에서 바로 보는 인테리어 상담.<br />오늘은 위브 매니저가 되어 고객의 주방을 제안해 보세요.</p>
-          <button type="button" class="start-btn" data-target="start">상담 서비스 체험하기<span id="startArrow"></span></button>
+          <img class="start-logo" src="/assets/ui/figma/weave-logo-full.svg" alt="오늘의집 Weave" />
+          <h1 class="start-title">김민선 씨의 인테리어 상담 도와주기</h1>
+          <button type="button" class="cta-btn" data-target="start">시작하기<img src="/assets/ui/figma/cta-arrow.svg" alt="" /></button>
         </div>
       </section>
 
+      <!-- 프롤로그 3장 (Figma 1433:3453 · 1433:3463 · 1433:3469). 화면을 누르면 다음 장. 본문은 scenario.js의 copy -->
+      <section class="prologue" id="prologue" hidden>
+        <button type="button" class="pro-header" id="proBack" data-free>
+          <img src="/assets/ui/figma/prologue-back.svg" alt="" />Prologue
+        </button>
+        <div class="pro-frame" data-target="prologue-next" id="proFrame">
+          <div class="pro-page" data-page="1">
+            <div class="pro-img is-wire">img</div>
+            <p class="pro-text"></p>
+          </div>
+          <div class="pro-page" data-page="2">
+            <img class="pro-photo pro-photo-l" src="/assets/ui/figma/prologue-scan.jpg" alt="" />
+            <img class="pro-arrow" src="/assets/ui/figma/prologue-arrow.svg" alt="" />
+            <img class="pro-photo pro-photo-r" src="/assets/ui/figma/prologue-store.jpg" alt="" />
+            <p class="pro-text"></p>
+          </div>
+          <div class="pro-page" data-page="3">
+            <div class="pro-img is-wire"><span>상담요청서img</span><b>고객: 김민선 · 의뢰: 주방에 아일랜드 놓기</b></div>
+            <p class="pro-text"></p>
+          </div>
+        </div>
+        <button type="button" class="cta-btn pro-cta" id="proCta" data-target="prologue-start">상담 플로우 시작하기<img src="/assets/ui/figma/cta-arrow.svg" alt="" /></button>
+      </section>
+
+      <!-- 캡션 말풍선 (Figma 1433:3440 매니저 · 1434:3719 김민선) -->
       <div class="caption" id="caption" hidden>
-        <span class="caption-speaker" id="captionSpeaker"></span>
+        <div class="cap-profile">
+          <span class="cap-avatar" id="capAvatar"></span>
+          <b class="cap-name" id="captionSpeaker"></b>
+        </div>
         <p class="caption-text" id="captionText"></p>
-        <button type="button" class="caption-next" id="captionNext" data-target="caption-next">다음</button>
+        <img class="cap-next" id="captionNext" alt="다음" />
       </div>
 
       <div class="tools" id="tools"></div>
