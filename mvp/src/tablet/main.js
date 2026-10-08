@@ -13,7 +13,7 @@ import { icon, loadUiAssets } from '../shared/ui-assets.js';
 import { wrapYaw } from '../shared/angles.js';
 import { createCoach } from './coach.js';
 import { coverage, createAnnotator } from './annotate.js';
-import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, mmss, renderEnding, renderOptionEditor, renderPanel } from './ui.js';
+import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, mmss, renderEnding, renderMoodboard, renderOptionEditor, renderPanel } from './ui.js';
 
 const VIEW_SEND_MS = 100; // managerView 10Hz
 const FRAME_H = 1292; // Figma 매니저 프레임 높이
@@ -102,6 +102,9 @@ const hotspotEl = h('button.hotspot', { type: 'button', dataset: { target: 'hots
 const hotspot = anchors.add(hotspotEl, null, { edge: true });
 const dimLabel = anchors.add(h('div.dim-label', {}, h('span', {}, ANCHORS.kitchen_front.dimension.label)), null);
 const traceSpot = anchors.add(h('div.trace-spot'), null);
+// 옵션수정: 깜박이는 바닥면을 눌러 고른다(S4-2b)
+const floorSpotEl = h('button.floor-spot', { type: 'button', dataset: { target: 'floor-surface' } });
+const floorSpot = anchors.add(floorSpotEl, null);
 
 const CHECK = ANCHORS.kitchen_front.check;
 const checkDense = CHECK.slice(1).flatMap((p, i) => interpolate({ yaw: CHECK[i][0], pitch: CHECK[i][1] }, { yaw: p[0], pitch: p[1] }, 10));
@@ -203,6 +206,14 @@ function updateCoach(flow, step) {
       find: () => [hotspotEl],
     });
   }
+  if (step.target === 'floor-surface') {
+    return coach.spatial({
+      rect: () => (floorSpotEl.hidden ? null : floorSpotEl.getBoundingClientRect()),
+      text: step.hint,
+      match: (el) => el === floorSpotEl,
+      find: () => [floorSpotEl],
+    });
+  }
   if (step.target === 'trace') {
     const size = 170 * (innerHeight / FRAME_H);
     return coach.spatial({
@@ -217,7 +228,9 @@ function updateCoach(flow, step) {
     dragHint.hidden = false;
     return coach.clear();
   }
-  coach.ui(step.target, step.values, step.hint, { dim: coachDim(step), quiet: coachQuiet(step) });
+  // 여러 개를 모두 눌러야 하는 단계(제품 3개 제안): 아직 안 누른 것만 가리킨다
+  const values = step.collect ? step.values.filter((v) => !(flow.picks ?? []).includes(v)) : step.values;
+  coach.ui(step.target, values, step.hint, { dim: coachDim(step), quiet: coachQuiet(step) });
 }
 
 // ---------- 캡션 말풍선: 매니저형(guide·manager) / 김민선형(customer) ----------
@@ -301,13 +314,32 @@ function render(state) {
   $('caption').hidden = !cap || t.panel === 'loading';
   if (cap) renderCaption(cap, step, flow, stepChanged);
 
+  // 가이드 UI(Figma 1438:4043): 상담 중 관람객이 할 일. 로딩 카드가 같은 문구를 보여 줄 때는 숨긴다
+  const guide = step.guide && screen === 'pano' && t.panel !== 'loading' ? step.guide : null;
+  $('guideUi').hidden = !guide;
+  $('ui').classList.toggle('has-guide', Boolean(guide));
+  if (guide) {
+    $('guideText').textContent = guide;
+    $('guideUi').classList.toggle('is-waiting', Boolean(t.waiting));
+    $('guideNext').hidden = Boolean(t.waiting || cap); // 말풍선이 있으면 말풍선의 » 하나만
+    if (stepChanged && $('guideUi').dataset.text !== guide) {
+      $('guideUi').style.animation = 'none';
+      void $('guideUi').offsetWidth;
+      $('guideUi').style.animation = '';
+    }
+    $('guideUi').dataset.text = guide;
+  }
+  // 김민선 무드보드(S2-1)
+  if (t.moodboard && $('moodboard').hidden) renderMoodboard($('moodboard'));
+  $('moodboard').hidden = !t.moodboard;
+
   // 상담 화면 크롬
   const chrome = inConsult && screen === 'pano';
   $('tools').hidden = $('nav').hidden = !chrome;
   const panel = t.panel && t.panel !== 'loading' ? t.panel : null;
   $('timer').hidden = !chrome || Boolean(panel);
   for (const b of $('tools').children) {
-    const on = (b.dataset.target === 'tool:measure' && t.dims) || (b.dataset.target === 'tool:annotate' && t.annotate) || (b.dataset.target === 'tool:options' && panel === 'options');
+    const on = (b.dataset.target === 'tool:measure' && t.dims) || (b.dataset.target === 'tool:annotate' && t.annotate) || (b.dataset.target === 'tool:options' && (panel === 'options' || t.optionsOn));
     b.setAttribute('aria-pressed', String(Boolean(on)));
   }
   for (const b of $('nav').children) {
@@ -322,7 +354,7 @@ function render(state) {
   $('ui').classList.toggle('is-over', Boolean(cardPanel));
   $('reportCta').hidden = step.target !== 'send-report';
   $('opt').hidden = panel !== 'options';
-  const panelKey = `${flow.step}|${flow.choices.island}|${flow.choices.floor}`;
+  const panelKey = `${flow.step}|${flow.choices.island}|${flow.choices.floor}|${(flow.picks ?? []).join('')}`;
   if (panel === 'options' && panelKey !== lastPanelKey) renderOptionEditor($('opt'), { picked: Boolean(t.chipPicked) });
   if (cardPanel && panelKey !== lastPanelKey) {
     const prevTotal = $('cardBody').querySelector('.total')?.textContent;
@@ -336,15 +368,13 @@ function render(state) {
   $('annotateBar').hidden = !t.annotate;
   annotator.setEnabled(Boolean(t.annotate));
   look.enabled = !t.annotate;
-  if (stepChanged && t.annotate) turnTo(checkCenter);
-  if (stepChanged && step.id === 'S2-2b') turnTo(dimMid);
-  // 옵션수정: 지시선이 가리키는 바닥 적용 영역이 화면 아래쪽에 오도록
-  if (stepChanged && t.panel === 'options' && STEP[lastStepBefore]?.tablet.panel !== 'options') turnTo({ yaw: 0, pitch: -14 });
 
   // 공간 위 표시
   const want = tabletSceneFor(flow);
   // 옵션수정 중에는 바닥 적용 영역을 파랗게 표시(Figma '선택 영역', #1AA0FF 20%)
-  if (panel === 'options' && !want.floor) want.floor = 'area';
+  if (t.area && !want.floor) want.floor = 'area';
+  viewer.setPulse(t.area === 'blink' ? 'floor' : null);
+  floorSpot.set(step.target === 'floor-surface' ? ANCHORS[want.pano]?.floor : null);
   const spot = ANCHORS[want.pano]?.hotspot;
   hotspot.set(step.target === 'hotspot' ? spot : null);
   hotspotEl.querySelector('.hotspot-label').textContent = spot?.label ?? '';
@@ -362,6 +392,13 @@ function render(state) {
   }
   lastPano = want.pano;
   player.show(want, { delay: 250 });
+
+  // 시선 돌리기: 공간이 바뀌어 정면으로 리셋한 다음에 돈다
+  if (stepChanged && t.annotate) turnTo(checkCenter);
+  if (stepChanged && step.id === 'S2-2b') turnTo(dimMid);
+  // 옵션수정: 바닥 적용 영역이 화면 아래쪽에 오도록(지시선이 가리키는 곳)
+  const prevT = STEP[lastStepBefore]?.tablet;
+  if (stepChanged && t.area && !prevT?.area) turnTo({ yaw: 0, pitch: -14 });
 
   updateCoach(flow, step);
 }

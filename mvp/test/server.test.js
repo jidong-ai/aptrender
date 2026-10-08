@@ -86,13 +86,13 @@ test('직원용 jump: 선택을 채우고 모두에게 스냅샷, 끊긴 화면�
   await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
   await xr.close();
 
-  tablet.send({ type: 'jump', step: 'S4-1a' });
+  tablet.send({ type: 'jump', step: 'S4-1' });
   const snap = await tablet.next('snapshot', (m) => m.reason === 'jump');
   assert.deepEqual(snap.state.flow.choices, { island: 'b', floor: null });
 
   xr = connect('xr');
   const again = await xr.next('snapshot');
-  assert.equal(again.state.flow.step, 'S4-1a');
+  assert.equal(again.state.flow.step, 'S4-1');
 
   tablet.send({ type: 'jump', step: 'nope' });
   assert.match((await tablet.next('error')).message, /알 수 없는 단계/);
@@ -140,7 +140,7 @@ test('아일랜드를 놓으면 체크 주석이 지워지고, stat은 flow.stat
   const tablet = connect('tablet');
   const xr = connect('xr');
   await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
-  tablet.send({ type: 'jump', step: 'S3-1c' });
+  tablet.send({ type: 'jump', step: 'S3-2a' }); // 김민선이 고르는 장면(자동 6.5초) → 아일랜드 배치
   await xr.next('snapshot', (m) => m.reason === 'jump');
   tablet.send({ type: 'stroke:start', stroke: { id: 'chk', tool: 'pencil', width: 4, color: '#003270', pts: [[0, -20]] } });
   await xr.next('stroke:start');
@@ -150,8 +150,7 @@ test('아일랜드를 놓으면 체크 주석이 지워지고, stat은 flow.stat
   tablet.send({ type: 'stat', key: 'nope' });
   assert.match((await tablet.next('error')).message, /stat/);
 
-  tablet.send({ type: 'flow', from: 'S3-1c', action: 'product', value: 'b' });
-  await xr.next('flow', (m) => m.flow.step === 'S3-2');
+  await xr.next('flow', (m) => m.flow.step === 'S3-2b', 9000);
   assert.equal((await xr.next('stroke:erase')).id, 'chk');
   assert.equal(server.getState().strokes.length, 0);
   assert.equal(server.getState().flow.stats.misses, 1); // 단계가 넘어가도 기록 유지

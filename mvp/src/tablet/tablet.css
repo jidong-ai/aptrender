@@ -83,7 +83,9 @@
   display: block;
 }
 
-.pic.is-wire {
+.pic.is-wire,
+.mb-tile.is-wire,
+.loading-img.is-wire {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1822,4 +1824,196 @@
   color: #fff;
   border: 0;
   padding: 0 28px;
+}
+
+/* ---------- 가이드 UI (Figma 1438:4043): 상담 중 관람객이 할 일 한 줄 ---------- */
+.guide-ui {
+  position: absolute;
+  left: 50%;
+  top: 176px; /* 상단 도구(94~150) 아래 */
+  z-index: 6; /* 카드를 띄워 뒤를 흐리게 해도 보이게 */
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 53px;
+  max-width: 1500px;
+  pointer-events: none;
+  animation: guide-in 0.35s ease both;
+}
+
+.guide-ui p {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+  color: #003270; /* Blue/400 */
+  white-space: nowrap;
+  /* 파노라마 위에서도 읽히게 흰 번짐만 살짝 */
+  text-shadow: 0 0 12px rgb(255 255 255 / 0.95), 0 0 4px rgb(255 255 255 / 0.9);
+}
+
+.ui.is-over .guide-ui p {
+  color: #fff;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.35);
+}
+
+.guide-ui img {
+  width: 23px;
+  height: 24px;
+  flex: none;
+  animation: cap-nudge 1.2s ease-in-out infinite;
+}
+
+/* 김민선이 고르는 중: 점이 흐르는 대기 표시 */
+.guide-ui.is-waiting p::after {
+  content: '';
+  display: inline-block;
+  width: 1.4em;
+  text-align: left;
+  animation: guide-dots 1.2s steps(4) infinite;
+}
+
+@keyframes guide-dots {
+  0% {
+    content: '';
+  }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75% {
+    content: '...';
+  }
+}
+
+@keyframes guide-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+
+/* 가이드가 있으면 말풍선은 그 아래로 */
+.ui.has-guide .caption {
+  top: 252px;
+}
+
+/* ---------- 김민선 무드보드 (S2-1) ---------- */
+.moodboard {
+  position: absolute;
+  right: 60px;
+  top: 452px;
+  z-index: 4;
+  width: 460px;
+  padding: 24px;
+  border-radius: 32px;
+  background: rgb(255 255 255 / 0.55);
+  backdrop-filter: blur(60px);
+  -webkit-backdrop-filter: blur(60px);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.12);
+  animation: card-in-r 0.45s ease both;
+}
+
+@keyframes card-in-r {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+.mb-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.mb-head b {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--grey-700);
+}
+
+.mb-head small {
+  font-size: 16px;
+  color: var(--grey-400);
+}
+
+.mb-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mb-tile {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.mb-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- 카탈로그: 제안한 제품 표시 (S3-1c) ---------- */
+.product {
+  position: relative;
+  border: 3px solid transparent !important;
+}
+
+.product[aria-pressed='true'] {
+  border-color: #1aa0ff !important;
+  background: rgb(26 160 255 / 0.18) !important;
+}
+
+.proposed {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #1aa0ff;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ---------- 옵션수정: 깜박이는 바닥면(누를 자리) ---------- */
+.floor-spot {
+  pointer-events: auto;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  width: calc(300px * var(--k));
+  height: calc(170px * var(--k));
+  margin: calc(-85px * var(--k)) 0 0 calc(-150px * var(--k));
+  border-radius: 50%;
+  background: transparent;
+}
+
+/* ---------- 로딩: 김민선 XR 헤드셋 착용 이미지 자리 ---------- */
+.loading-img {
+  height: 260px;
+  margin: -16px -8px 28px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.loading-img.is-wire,
+.mb-tile.is-wire {
+  background: repeating-linear-gradient(135deg, rgb(0 0 0 / 0.06) 0 10px, rgb(0 0 0 / 0.02) 10px 20px);
+  border: 1px dashed rgb(0 0 0 / 0.2);
 }

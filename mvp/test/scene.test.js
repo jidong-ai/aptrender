@@ -24,7 +24,7 @@ test('누끼 파일(_cut)', () => {
 test('장면에 필요한 레이어 ID', () => {
   assert.equal(layerIdFor('kitchen_front', 'island', 'c'), 'island_c_front');
   assert.equal(layerIdFor('kitchen_side', 'island', 'b'), 'island_b_side');
-  assert.equal(layerIdFor('kitchen_side', 'floor', 'portland'), null); // 측면 바닥재는 렌더하지 않음
+  assert.equal(layerIdFor('kitchen_side', 'floor', 'portland'), 'floor_portland_side'); // S4는 측면에서 진행
   assert.equal(layerIdFor('store_1', 'island', 'a'), null);
   assert.equal(layerIdFor('kitchen_front', 'island', null), null);
 });

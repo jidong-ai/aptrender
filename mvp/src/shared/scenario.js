@@ -2,7 +2,10 @@
 // 단계를 고치거나 문구를 바꿀 때는 이 파일만 고친다. 표로 보기: docs/SCENARIO.md
 //
 // 단계 필드
-//  caption  { speaker, text }  speaker: 'guide'(안내, 태블릿에만) | 'manager'(매니저 대사) | 'customer'(고객, 김민선)
+//  caption  말풍선 { speaker, text }  speaker: 'manager'(선배 매니저, 매장 장면에서만) | 'customer'(김민선, XR 자막에도)
+//  guide    가이드 UI(Figma 1438:4043): 상담 중 관람객(=매니저)이 할 일을 알려 주는 한 줄. 태블릿에만
+//  say      관람객이 맡은 매니저의 대사. XR 자막으로만 나온다(고객이 듣는 말)
+//  collect  values를 모두 눌러야 넘어간다(누른 값은 flow.picks에 쌓임)
 //  target   관람객이 눌러야 할 대상. 이것만 누를 수 있다(파노라마 둘러보기는 항상 가능)
 //  hint     가이드 화살표 옆 지시문
 //  values   target이 여러 값 중 하나를 고르는 경우(후보 선택)
@@ -15,12 +18,12 @@
 //  dim      대상 외 화면을 어둡게 할지. 생략하면 작은 메뉴 버튼(tool:·nav:·category:)만 어둡게 한다
 //  clearStrokes  다음 단계로 넘어갈 때 주석을 지운다
 //  tablet   태블릿 화면: screen('start'|'pano'|'ending'), pano, panel(가운데 카드), annotate, dims
-//  xr       XR 화면: screen('standby'|'boot'|'home'|'ending'), side(고객만 측면으로, sideAfter ms 뒤), report
+//  xr       XR 화면: screen('standby'|'boot'|'home'|'ending'), pano(기본 kitchen_front), moodboard, offer('island'|'floor' 제품 카드),
+//           choose(카드 중 김민선이 고르는 값, 고르는 장면 재생), report
 
 import { FLOOR_OPTIONS, ISLAND_OPTIONS } from './scene.js';
 
-// guide = 선배 매니저(관람객을 안내), manager = 관람객이 맡은 매니저의 대사, customer = 고객 김민선
-// 캡션 디자인(Figma 1433:3440 · 1434:3719)은 매니저형·김민선형 두 가지: guide·manager → 매니저형, customer → 김민선형
+// 말풍선(Figma 1433:3440 · 1434:3719): manager = 매장에서 관람객을 맞는 선배 매니저, customer = 고객 김민선
 export const SPEAKERS = { guide: '매니저', manager: '매니저', customer: '김민선' };
 
 export const STEPS = [
@@ -73,7 +76,7 @@ export const STEPS = [
   {
     id: 'S0-4',
     chapter: 'opening',
-    caption: { speaker: 'guide', text: '반갑습니다! Weave 매장 첫 출근을 축하드려요.\n오늘 주방 인테리어 상담을 맡으셨다구요?' },
+    caption: { speaker: 'manager', text: '반갑습니다! Weave 매장 첫 출근을 축하드려요.\n오늘 주방 인테리어 상담을 맡으셨다구요?' },
     target: 'caption-next',
     hint: '다음',
     tablet: { pano: 'store_1' },
@@ -82,7 +85,7 @@ export const STEPS = [
   {
     id: 'S0-5a',
     chapter: 'opening',
-    caption: { speaker: 'guide', text: '아일랜드 설치를 희망하셔서, 김민선씨가 미리 업로드해주신 주방 3d스캔본 위에서 캡션 안내에 따라 공간을 제안해주세요' },
+    caption: { speaker: 'manager', text: '아일랜드 설치를 희망하셔서, 김민선씨가 미리 업로드해주신 주방 3d스캔본 위에서 캡션 안내에 따라 공간을 제안해주세요' },
     target: 'hotspot',
     hint: '화살표를 눌러 안으로 이동',
     tablet: { pano: 'store_1' },
@@ -91,7 +94,7 @@ export const STEPS = [
   {
     id: 'S0-5b',
     chapter: 'opening',
-    caption: { speaker: 'guide', text: '상담실에서 김민선 씨가 기다리고 있어요' },
+    caption: { speaker: 'manager', text: '상담실에서 김민선 씨가 기다리고 있어요' },
     target: 'hotspot',
     hint: '화살표를 눌러 상담실로 이동',
     tablet: { pano: 'store_2' },
@@ -101,27 +104,29 @@ export const STEPS = [
   {
     id: 'S1',
     chapter: 'loading',
-    caption: { speaker: 'guide', text: '김민선 씨 XR 헤드셋을 착용중' },
+    guide: '김민선 씨 XR 헤드셋을 착용중',
     auto: 3500,
     tablet: { pano: 'counsel', panel: 'loading' },
     xr: { screen: 'boot' },
   },
-  // ---------- 2 주방 ----------
+  // ---------- 2 주방: 고객 취향 공유(무드보드) → 900mm 동선 ----------
   {
     id: 'S2-1',
     chapter: 'kitchen',
-    caption: { speaker: 'manager', text: '일자형 부엌에 아일랜드를 추가하고싶으신거군요' },
+    guide: '김민선 씨가 무드보드를 공유했어요',
+    caption: { speaker: 'customer', text: '평소에 요리하는 걸 좋아해서, 이 사진들처럼 주방에 아일랜드를 추가하고 싶어요.' },
     target: 'caption-next',
-    hint: '화면을 끌어 주방을 둘러보세요',
+    hint: '다음',
     look: true, // 충분히 둘러본 뒤에 '다음'이 열린다
     startsTimer: true,
-    tablet: { pano: 'kitchen_front' },
-    xr: { screen: 'home' },
+    tablet: { pano: 'kitchen_front', moodboard: true },
+    xr: { screen: 'home', moodboard: true },
   },
   {
     id: 'S2-2a',
     chapter: 'kitchen',
-    caption: { speaker: 'manager', text: '싱크대로부터 900mm 이동동선 확보하고 이 쪽에 한 번 배치해볼게요' },
+    guide: '치수확인을 눌러 싱크대로부터 900mm 이동동선을 확인해주세요',
+    say: '싱크대로부터 900mm 이동동선 확보하고 이 쪽에 한 번 배치해볼게요',
     target: 'tool:measure',
     hint: '치수확인',
     tablet: { pano: 'kitchen_front' },
@@ -130,7 +135,7 @@ export const STEPS = [
   {
     id: 'S2-2b',
     chapter: 'kitchen',
-    caption: { speaker: 'guide', text: '900mm 지점에 표시를 남겨 김민선 씨에게 보여주세요' },
+    guide: '900mm 지점에 표시를 남겨 김민선 씨에게 보여주세요',
     target: 'tool:annotate',
     hint: '주석추가',
     tablet: { pano: 'kitchen_front', dims: true },
@@ -139,17 +144,17 @@ export const STEPS = [
   {
     id: 'S2-2c',
     chapter: 'kitchen',
-    caption: { speaker: 'guide', text: '점선을 따라 체크해 주세요' },
+    guide: '점선을 따라 체크해 주세요',
     target: 'trace',
     hint: '점선을 따라 그리기',
     tablet: { pano: 'kitchen_front', dims: true, annotate: true },
     xr: { screen: 'home', dims: true },
   },
-  // ---------- 3 아일랜드 ----------
+  // ---------- 3 아일랜드: 매니저가 3개 제안 → 김민선이 XR에서 고름 ----------
   {
     id: 'S3-1a',
     chapter: 'island',
-    caption: { speaker: 'manager', text: '마호가니 컬러의 어두운 목재로 무게감을 주고싶으시다고 하셨으니 이 제품으로 선택해볼게요' },
+    guide: '무드보드 속 제품과 비슷한 소재의 아일랜드 3개를 제안해주세요.',
     target: 'nav:ohouse',
     hint: '오늘의집',
     tablet: { pano: 'kitchen_front', dims: true },
@@ -158,7 +163,7 @@ export const STEPS = [
   {
     id: 'S3-1b',
     chapter: 'island',
-    caption: { speaker: 'manager', text: '마호가니 컬러의 어두운 목재로 무게감을 주고싶으시다고 하셨으니 이 제품으로 선택해볼게요' },
+    guide: '무드보드 속 제품과 비슷한 소재의 아일랜드 3개를 제안해주세요.',
     target: 'category:object',
     hint: '오브제',
     tablet: { pano: 'kitchen_front', panel: 'ohouse' },
@@ -167,117 +172,106 @@ export const STEPS = [
   {
     id: 'S3-1c',
     chapter: 'island',
-    caption: { speaker: 'manager', text: '마호가니 컬러의 어두운 목재로 무게감을 주고싶으시다고 하셨으니 이 제품으로 선택해볼게요' },
+    guide: '무드보드 속 제품과 비슷한 소재의 아일랜드 3개를 제안해주세요.',
     target: 'product',
-    values: ['b'],
-    hint: '아떼 원목 아일랜드 식탁',
-    set: () => ({ island: 'b' }),
-    clearStrokes: true, // 아일랜드를 놓으면 900mm 체크 표시는 역할을 다했으므로 지운다
+    values: ISLAND_OPTIONS,
+    collect: true, // a·b·c를 모두 눌러야 넘어간다. 누른 순서대로 XR에 제품 카드가 뜬다
+    hint: '제품을 눌러 제안하기',
+    say: '무드보드와 비슷한 제품을 추천드릴게요',
     tablet: { pano: 'kitchen_front', panel: 'catalog' },
-    xr: { screen: 'home' },
+    xr: { screen: 'home', offer: 'island' },
   },
   {
-    id: 'S3-2',
+    id: 'S3-2a',
     chapter: 'island',
-    caption: { speaker: 'customer', text: '아일랜드 안쪽 모습도 더 자세히 보고싶어요' },
+    guide: '김민선 씨가 고르는 중', // 뒤에 점(…)이 흐른다
+    auto: 6500, // XR에서 김민선이 카드 중 b를 고르는 장면이 재생된다
+    set: () => ({ island: 'b' }),
+    clearStrokes: true, // 아일랜드를 놓으면 900mm 체크 표시는 역할을 다했으므로 지운다
+    tablet: { pano: 'kitchen_front', waiting: true },
+    xr: { screen: 'home', offer: 'island', choose: 'b' },
+  },
+  {
+    id: 'S3-2b',
+    chapter: 'island',
+    caption: { speaker: 'customer', text: '이 제품이 가격, 디자인 모두 제일 마음에 들어요.' },
     target: 'caption-next',
     hint: '다음',
     tablet: { pano: 'kitchen_front' },
-    xr: { screen: 'home' }, // 고객 대사만. 측면 전환은 '다음'을 누른 뒤(S3-3a부터)
-  },
-  {
-    id: 'S3-3a',
-    chapter: 'island',
-    caption: { speaker: 'guide', text: '가장 잘어울리는 제품을 김민선 씨에게 제안해주세요' },
-    target: 'nav:detail',
-    hint: '상담상세',
-    tablet: { pano: 'kitchen_front' },
-    xr: { screen: 'home', side: true }, // 고객이 아일랜드 측면(안쪽)을 보는 동안 후보를 고른다
-  },
-  {
-    id: 'S3-3b',
-    chapter: 'island',
-    caption: { speaker: 'guide', text: '가장 잘어울리는 제품을 김민선 씨에게 제안해주세요' },
-    target: 'detail:island',
-    hint: '아일랜드 적용제품',
-    tablet: { pano: 'kitchen_front', panel: 'detail' },
-    xr: { screen: 'home', side: true }, // 고객이 아일랜드 측면(안쪽)을 보는 동안 후보를 고른다
-  },
-  {
-    id: 'S3-3c',
-    chapter: 'island',
-    caption: { speaker: 'guide', text: '가장 잘어울리는 제품을 김민선 씨에게 제안해주세요' },
-    target: 'choice:island',
-    values: ISLAND_OPTIONS,
-    hint: '제품 하나를 골라 주세요',
-    set: (value) => ({ island: value }),
-    tablet: { pano: 'kitchen_front', panel: 'detail', expand: 'island' },
-    xr: { screen: 'home', side: true }, // 고객이 아일랜드 측면(안쪽)을 보는 동안 후보를 고른다
-  },
-  // ---------- 4 바닥재 ----------
-  {
-    id: 'S4-1a',
-    chapter: 'floor',
-    caption: { speaker: 'manager', text: '기존 주방에서 중앙에 들어오는 아일랜드가 조금 튀어보이네요. 어두운 타일자재를 사용하면 톤을 맞추면서도 주방 청소가 용이해요' },
-    target: 'tool:options',
-    hint: '옵션수정',
-    tablet: { pano: 'kitchen_front' },
     xr: { screen: 'home' },
   },
+  // ---------- 4 바닥재: 고객 질문 → 매니저가 2개 제안 → 김민선이 XR에서 고름 (측면 시점) ----------
   {
-    id: 'S4-1b',
+    id: 'S4-1',
     chapter: 'floor',
-    caption: { speaker: 'manager', text: '기존 주방에서 중앙에 들어오는 아일랜드가 조금 튀어보이네요. 어두운 타일자재를 사용하면 톤을 맞추면서도 주방 청소가 용이해요' },
-    target: 'chip',
-    hint: '이 색상 선택',
-    tablet: { pano: 'kitchen_front', panel: 'options' },
-    xr: { screen: 'home' },
-  },
-  {
-    id: 'S4-1c',
-    chapter: 'floor',
-    caption: { speaker: 'manager', text: '기존 주방에서 중앙에 들어오는 아일랜드가 조금 튀어보이네요. 어두운 타일자재를 사용하면 톤을 맞추면서도 주방 청소가 용이해요' },
-    target: 'apply',
-    cta: true,
-    hint: '적용하기',
-    set: () => ({ floor: 'portland' }),
-    tablet: { pano: 'kitchen_front', panel: 'options', chipPicked: true },
-    xr: { screen: 'home' },
+    caption: { speaker: 'customer', text: '제품은 마음에 드는데, 우리 집에는 안어울려보이네요. 어떡하죠?' },
+    target: 'caption-next',
+    hint: '다음',
+    tablet: { pano: 'kitchen_side' },
+    xr: { screen: 'home', pano: 'kitchen_side' },
   },
   {
     id: 'S4-2a',
     chapter: 'floor',
-    caption: { speaker: 'guide', text: '가장 잘어울리는 제품을 김민선 씨에게 제안해주세요' },
-    target: 'nav:detail',
-    hint: '상담상세',
-    tablet: { pano: 'kitchen_front' },
-    xr: { screen: 'home' },
+    guide: '어두운 색상의 아일랜드에 어울리는 바닥재 2개를 제안해주세요.',
+    say: '기존 주방에서 중앙에 들어오는 아일랜드가 조금 튀어보이네요. 어두운 타일자재를 사용하면 톤을 맞추면서도 주방 청소가 용이해요',
+    target: 'tool:options',
+    hint: '옵션수정',
+    tablet: { pano: 'kitchen_side' },
+    xr: { screen: 'home', pano: 'kitchen_side' },
   },
   {
     id: 'S4-2b',
     chapter: 'floor',
-    caption: { speaker: 'guide', text: '가장 잘어울리는 제품을 김민선 씨에게 제안해주세요' },
-    target: 'detail:floor',
-    hint: '바닥 적용제품',
-    tablet: { pano: 'kitchen_front', panel: 'detail' },
-    xr: { screen: 'home' },
+    guide: '어두운 색상의 아일랜드에 어울리는 바닥재 2개를 제안해주세요.',
+    target: 'floor-surface',
+    hint: '바닥면을 눌러 선택',
+    tablet: { pano: 'kitchen_side', area: 'blink', optionsOn: true },
+    xr: { screen: 'home', pano: 'kitchen_side' },
   },
   {
     id: 'S4-2c',
     chapter: 'floor',
-    caption: { speaker: 'guide', text: '가장 잘어울리는 제품을 김민선 씨에게 제안해주세요' },
-    target: 'choice:floor',
-    values: FLOOR_OPTIONS,
-    hint: '바닥재 하나를 골라 주세요',
-    set: (value) => ({ floor: value }),
-    tablet: { pano: 'kitchen_front', panel: 'detail', expand: 'floor' },
-    xr: { screen: 'home' },
+    guide: '어두운 색상의 아일랜드에 어울리는 바닥재 2개를 제안해주세요.',
+    target: 'chip',
+    hint: '이 색상 선택',
+    tablet: { pano: 'kitchen_side', panel: 'options', area: 'on' },
+    xr: { screen: 'home', pano: 'kitchen_side' },
+  },
+  {
+    id: 'S4-2d',
+    chapter: 'floor',
+    guide: '어두운 색상의 아일랜드에 어울리는 바닥재 2개를 제안해주세요.',
+    target: 'apply',
+    cta: true,
+    hint: '적용하기',
+    set: () => ({ floor: 'portland' }), // 제안한 바닥재를 먼저 깔아 보여 준다
+    tablet: { pano: 'kitchen_side', panel: 'options', chipPicked: true, area: 'on' },
+    xr: { screen: 'home', pano: 'kitchen_side' },
+  },
+  {
+    id: 'S4-3a',
+    chapter: 'floor',
+    guide: '김민선 씨가 고르는 중', // 뒤에 점(…)이 흐른다
+    auto: 6000, // XR에서 김민선이 바닥재 카드 2개 중 a(포틀랜드 모티프)를 고르는 장면
+    set: () => ({ floor: 'portland' }),
+    tablet: { pano: 'kitchen_side', waiting: true },
+    xr: { screen: 'home', pano: 'kitchen_side', offer: 'floor', choose: 'portland' },
+  },
+  {
+    id: 'S4-3b',
+    chapter: 'floor',
+    caption: { speaker: 'customer', text: '이 제품이 잘 어울리는 것 같아요.' },
+    target: 'caption-next',
+    hint: '다음',
+    tablet: { pano: 'kitchen_side' },
+    xr: { screen: 'home', pano: 'kitchen_side' },
   },
   // ---------- 5 아웃트로 ----------
   {
     id: 'S5-1',
     chapter: 'outro',
-    caption: { speaker: 'guide', text: '상담 내용을 정리해 김민선 씨에게 보내 주세요' },
+    guide: '상담 내용을 정리해 김민선 씨에게 보내 주세요',
     target: 'send-report',
     cta: true,
     hint: '상담 리포트 보내기',
@@ -306,7 +300,7 @@ export const stepIndex = (id) => STEP[id]?.index ?? -1;
 const emptyStats = () => ({ misses: 0, traceTries: 0 });
 
 export function createFlow(now = Date.now()) {
-  return { step: FIRST_STEP, enteredAt: now, timerAt: null, choices: { island: null, floor: null }, stats: emptyStats() };
+  return { step: FIRST_STEP, enteredAt: now, timerAt: null, choices: { island: null, floor: null }, picks: [], stats: emptyStats() };
 }
 
 /** 가이드 링을 띄우지 않는 단계: quiet, CTA 버튼(이미 색으로 강조), 캡션 화살표(화살표가 움직여 알려 줌) */
@@ -339,6 +333,7 @@ function enter(flow, id, choices, now) {
     enteredAt: now,
     timerAt: step.startsTimer && !flow.timerAt ? now : flow.timerAt,
     choices,
+    picks: flow.picks ?? [],
     stats: { ...emptyStats(), ...flow.stats },
   };
 }
@@ -361,6 +356,12 @@ export function nextStep(flow, msg, now = Date.now()) {
   } else {
     if (!step.target || msg.action !== step.target) return { error: `${step.id}에서 받을 수 없는 입력: ${msg.action}` };
     if (step.values && !step.values.includes(msg.value)) return { error: `${step.id}: 허용되지 않은 값 ${msg.value}` };
+    if (step.collect) {
+      // 모두 누를 때까지 같은 단계에 머문다
+      const picks = (flow.picks ?? []).includes(msg.value) ? flow.picks : [...(flow.picks ?? []), msg.value];
+      if (picks.length < step.values.length) return { flow: { ...flow, picks } };
+      flow = { ...flow, picks };
+    }
   }
   const choices = { ...flow.choices, ...(step.set?.(msg.value) ?? {}) };
   const nextId = step.next ?? STEPS[step.index + 1]?.id;
@@ -373,27 +374,27 @@ export function jumpFlow(flow, id, now = Date.now()) {
   if (!STEP[id]) return null;
   const i = stepIndex(id);
   const choices = { island: null, floor: null };
-  if (i > stepIndex('S3-1c')) choices.island = flow.choices.island ?? 'b';
-  if (i > stepIndex('S4-1c')) choices.floor = flow.choices.floor ?? 'portland';
+  if (i > stepIndex('S3-2a')) choices.island = flow.choices.island ?? 'b';
+  if (i > stepIndex('S4-2d')) choices.floor = flow.choices.floor ?? 'portland';
+  const picks = i > stepIndex('S3-1c') ? [...ISLAND_OPTIONS] : [];
   const timerAt = i >= stepIndex('S2-1') ? (flow.timerAt ?? now) : null;
-  return { step: id, enteredAt: now, timerAt, choices, stats: i === 0 ? emptyStats() : { ...emptyStats(), ...flow.stats } };
+  return { step: id, enteredAt: now, timerAt, choices, picks, stats: i === 0 ? emptyStats() : { ...emptyStats(), ...flow.stats } };
 }
 
 /** 이 단계로 바로 이동할 때 주석을 지워야 하는가(체크 단계 이전, 또는 아일랜드를 놓은 뒤) */
-export const clearsStrokes = (id) => stepIndex(id) <= stepIndex('S2-2c') || stepIndex(id) > stepIndex('S3-1c');
+export const clearsStrokes = (id) => stepIndex(id) <= stepIndex('S2-2c') || stepIndex(id) > stepIndex('S3-2a');
 
-/** XR(고객) 화면에 띄울 장면 { pano, island, floor } — 대기·부팅 화면이면 pano = null. now = 서버 시각(sideAfter 판단) */
-export function xrSceneFor(flow, now = Infinity) {
+/** XR(고객) 화면에 띄울 장면 { pano, island, floor } — 대기·부팅 화면이면 pano = null */
+export function xrSceneFor(flow) {
   const step = STEP[flow.step];
   if (step.xr.screen === 'standby' || step.xr.screen === 'boot') return { pano: null, island: null, floor: null };
-  if (step.xr.side && (!step.xr.sideAfter || now - flow.enteredAt >= step.xr.sideAfter)) return { pano: 'kitchen_side', island: flow.choices.island, floor: null };
-  return { pano: 'kitchen_front', island: flow.choices.island, floor: flow.choices.floor };
+  return { pano: step.xr.pano ?? 'kitchen_front', island: flow.choices.island, floor: flow.choices.floor };
 }
 
 /** 태블릿(매니저) 화면에 띄울 장면 */
 export function tabletSceneFor(flow) {
   const step = STEP[flow.step];
   const pano = step.tablet.pano;
-  if (pano !== 'kitchen_front') return { pano, island: null, floor: null };
+  if (!pano?.startsWith('kitchen')) return { pano, island: null, floor: null };
   return { pano, island: flow.choices.island, floor: flow.choices.floor };
 }

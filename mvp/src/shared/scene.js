@@ -19,6 +19,8 @@ export const LAYERS = {
   island_b_side: { kind: 'island', option: 'b', pano: 'kitchen_side' },
   floor_portland_front: { kind: 'floor', option: 'portland', pano: 'kitchen_front' },
   floor_flosso_front: { kind: 'floor', option: 'flosso', pano: 'kitchen_front' },
+  floor_portland_side: { kind: 'floor', option: 'portland', pano: 'kitchen_side' }, // S4는 측면에서 진행
+  floor_flosso_side: { kind: 'floor', option: 'flosso', pano: 'kitchen_side' },
 };
 
 export const ISLAND_OPTIONS = ['a', 'b', 'c'];
@@ -73,7 +75,7 @@ export const ANCHORS = {
   },
   kitchen_side: {
     island: { yaw: 0, pitch: -16 },
-    floor: { yaw: 0, pitch: -42 },
+    floor: { yaw: 0, pitch: -30 }, // 옵션수정에서 누르는 바닥면(임시 영역 FLOOR_AREA.kitchen_side의 가운데쯤)
   },
 };
 
@@ -87,6 +89,15 @@ export const FLOOR_AREA = {
     [0.62, 0.84],
     [0.38, 0.84],
     [0.415, 0.7],
+  ],
+  // 측면 렌더를 받으면 Figma로 kitchen_side_floor.svg를 그려 masks/에 넣는다. 그 전까지 임시 영역
+  kitchen_side: [
+    [0.44, 0.58],
+    [0.56, 0.58],
+    [0.63, 0.72],
+    [0.66, 0.84],
+    [0.34, 0.84],
+    [0.37, 0.72],
   ],
 };
 

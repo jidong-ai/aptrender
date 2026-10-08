@@ -6,7 +6,7 @@ import { mountHud } from '../shared/hud.js';
 import { PanoViewer } from '../shared/pano-viewer.js';
 import { attachLookControls } from '../shared/look-controls.js';
 import { PART_TEXT, createScenePlayer } from '../shared/pano-set.js';
-import { ANCHORS, PANOS } from '../shared/scene.js';
+import { ANCHORS, FLOOR_OPTIONS, PANOS } from '../shared/scene.js';
 import { SPEAKERS, STEP, STEPS, rewardFor, stepIndex, tabletSceneFor, xrSceneFor } from '../shared/scenario.js';
 import { confetti } from '../shared/celebrate.js';
 import { FLOORS, ISLANDS, estimate, won } from '../shared/catalog.js';
@@ -187,6 +187,89 @@ function renderReport(flow) {
   setTimeout(() => confetti($('report'), { origin: { x: 0.5, y: 0.3 } }), 1200);
 }
 
+// ---------- 김민선 무드보드 (S2-1) ----------
+function renderMoodboard() {
+  const box = $('xrMoodboard');
+  box.textContent = '';
+  const grid = el('div', 'mb-grid');
+  for (let n = 1; n <= 4; n += 1) grid.append(el('span', 'mb-tile is-wire', `집들이 사진 ${n}`));
+  box.append(el('b', '', '내 무드보드'), el('small', '', '오늘의집 집들이에서 저장한 사진'), grid);
+}
+
+// ---------- 제품 카드: 매니저가 제안 → 김민선이 고른다 ----------
+const FIG = '/assets/ui/figma';
+const OFFER = {
+  island: {
+    title: '매니저가 제안한 아일랜드',
+    card: (k) => ({ img: `${FIG}/island-${k}-photo.jpg`, name: ISLANDS[k].name, sub: `${ISLANDS[k].brand} · ${won(ISLANDS[k].price)}` }),
+  },
+  floor: {
+    title: '매니저가 제안한 바닥재',
+    card: (k) => ({ img: `${FIG}/floor-${k}.jpg`, name: FLOORS[k].name.replace('진 그란데 스퀘어 ', ''), sub: `${FLOORS[k].brand} · ${won(FLOORS[k].pricePerM2)}/㎡` }),
+  },
+};
+const offerKeys = (kind, flow) => (kind === 'island' ? flow.picks ?? [] : FLOOR_OPTIONS);
+let offerShown = '';
+let chooseTimers = [];
+
+function renderOffer(step, flow, stepChanged) {
+  const box = $('offer');
+  const kind = step.xr.offer;
+  box.hidden = !kind;
+  if (!kind) {
+    offerShown = '';
+    return;
+  }
+  const keys = offerKeys(kind, flow);
+  const key = `${step.id}|${keys.join('')}`;
+  if (key === offerShown) return;
+  const before = new Set([...box.querySelectorAll('.offer-card')].map((c) => c.dataset.value));
+  offerShown = key;
+  box.textContent = '';
+  box.dataset.kind = kind;
+  const head = el('div', 'offer-head');
+  head.append(el('small', '', step.xr.choose ? '마음에 드는 제품을 골라 주세요' : '매니저 추천'), el('b', '', OFFER[kind].title));
+  const row = el('div', 'offer-row');
+  for (const k of keys) {
+    const c = OFFER[kind].card(k);
+    const card = el('div', 'offer-card');
+    card.dataset.value = k;
+    if (!before.has(k) && !step.xr.choose) card.classList.add('is-new'); // 방금 제안된 카드만 등장 연출
+    const pic = el('span', 'pic');
+    pic.append(Object.assign(document.createElement('img'), { src: c.img, alt: '' }));
+    card.append(pic, el('b', '', c.name), el('small', '', c.sub), el('span', 'badge', '선택'));
+    row.append(card);
+  }
+  // 고르는 손(김민선)
+  const hand = el('span', 'offer-hand');
+  box.append(head, row, hand);
+  if (step.xr.choose && stepChanged) playChoose(row, hand, keys, step.xr.choose, step.auto);
+}
+
+/** 김민선이 카드를 하나씩 살펴보다가 고르는 장면. 단계 시간(ms) 안에 고른 카드가 1.7초 이상 보이게 */
+function playChoose(row, hand, keys, pick, duration = 6000) {
+  chooseTimers.forEach(clearTimeout);
+  chooseTimers = [];
+  const cards = [...row.children];
+  const at = (ms, fn) => chooseTimers.push(setTimeout(fn, ms));
+  const hover = (card) => {
+    cards.forEach((c) => c.classList.toggle('is-hover', c === card));
+    // 카드 기준 좌표(.offer 안, 무대 px)라 화면 축소와 무관
+    hand.style.transform = `translate(${card.offsetLeft + card.offsetWidth / 2}px, ${card.offsetTop + card.offsetHeight * 0.62}px)`;
+    hand.classList.add('show');
+  };
+  const order = [...cards, cards[keys.indexOf(pick)]];
+  const gap = Math.max(600, (duration - 2600) / order.length);
+  order.forEach((card, i) => at(900 + i * gap, () => hover(card)));
+  at(900 + (order.length - 1) * gap + 500, () => {
+    hand.classList.add('tap');
+    const chosen = cards[keys.indexOf(pick)];
+    cards.forEach((c) => c.classList.toggle('is-chosen', c === chosen));
+    cards.forEach((c) => c.classList.toggle('is-out', c !== chosen));
+    cards.forEach((c) => c.classList.remove('is-hover'));
+  });
+}
+
 // ---------- 매니저 시선 ----------
 const frame = createManagerFrame(viewer, $('mgrLayer'));
 let tabletOnline = false;
@@ -209,7 +292,7 @@ sync.on('change', (msg) => {
   }
   if (msg.type !== 'flow' || !prev) return;
   const now = msg.flow;
-  const anchorsHere = ANCHORS[xrSceneFor(now, sync.serverNow()).pano] ?? ANCHORS.kitchen_front;
+  const anchorsHere = ANCHORS[xrSceneFor(now).pano] ?? ANCHORS.kitchen_front;
   if (now.choices.island !== prev.choices.island && now.choices.island) {
     notify(`${josa(ISLANDS[now.choices.island].name, '을', '를')} 배치`);
     if (gazeTo(anchorsHere.island)) effectDelay = GAZE_MS * 0.65;
@@ -228,7 +311,6 @@ function onSpaceChange(want, was) {
   viewer.setView({ yaw: 0, pitch: -6 });
   if (want.island) gazeTo(ANCHORS[want.pano]?.island);
 }
-const rerender = () => latest && onState(latest);
 
 let lastStep = null;
 sync.on('state', onState);
@@ -246,8 +328,9 @@ function onState(state) {
   $('home').hidden = !inHome || screen === 'ending';
   for (const item of $('xrNav').children) item.classList.toggle('on', item.dataset.name === 'bag' && Boolean(flow.choices.island));
 
-  // 자막: 매니저·고객 대사만(안내 문구는 태블릿에만)
-  const cap = step.caption && step.caption.speaker !== 'guide' && screen === 'home' ? step.caption : null;
+  // 자막: 김민선의 말(caption)과 관람객이 맡은 매니저의 말(say). 가이드 UI 문구는 태블릿에만
+  const said = step.caption?.speaker === 'customer' ? step.caption : step.say ? { speaker: 'manager', text: step.say } : null;
+  const cap = screen === 'home' ? said : null;
   $('subtitle').hidden = !cap;
   if (cap) {
     $('subtitle').dataset.speaker = cap.speaker;
@@ -255,13 +338,20 @@ function onState(state) {
     $('subText').textContent = cap.text;
   }
 
+  $('xrMoodboard').hidden = !(step.xr.moodboard && screen === 'home');
+  if (step.xr.moodboard && stepChanged) renderMoodboard();
+  if (stepChanged) {
+    chooseTimers.forEach(clearTimeout);
+    chooseTimers = [];
+  }
+  renderOffer(step, flow, stepChanged);
+
   if (screen === 'home') renderPrice(flow.choices);
   else $('price').hidden = true;
   $('report').hidden = !step.xr.report;
   if (step.xr.report && stepChanged) renderReport(flow);
 
-  const want = xrSceneFor(flow, sync.serverNow());
-  if (step.xr.sideAfter && stepChanged) setTimeout(() => latest === state && rerender(), Math.max(0, flow.enteredAt + step.xr.sideAfter - sync.serverNow()) + 20);
+  const want = xrSceneFor(flow);
   if (want.pano !== shownPano && shownPano && want.pano) onSpaceChange(want, shownPano);
   shownPano = want.pano;
   if (stepChanged && stepIndex(flow.step) === stepIndex('S2-1') && prev && STEP[prev.step]?.xr.screen === 'boot') viewer.setView({ yaw: 0, pitch: -4 });

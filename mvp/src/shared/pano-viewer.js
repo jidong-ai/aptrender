@@ -278,6 +278,11 @@ export class PanoViewer {
     L.anim = { kind: effect, start: performance.now() + delay };
   }
 
+  /** 레이어 하나를 깜박이게 한다(null이면 끈다) */
+  setPulse(slot) {
+    this.pulseSlot = slot ?? null;
+  }
+
   tick(now) {
     if (this.fade) {
       const t = Math.min(1, (now - this.fade.start) / this.fade.duration);
@@ -325,7 +330,9 @@ export class PanoViewer {
     for (const slot of LAYER_SLOTS) {
       const L = stack.layers[slot];
       const u = L.mesh.material.uniforms;
-      const opacity = stack.alpha * L.opacity;
+      let opacity = stack.alpha * L.opacity;
+      // 깜박임(옵션수정에서 '바닥면을 눌러 선택' 단계): 레이어가 숨 쉬듯 밝아졌다 흐려진다
+      if (slot === this.pulseSlot && !L.anim) opacity *= 0.3 + 0.7 * (0.5 + 0.5 * Math.cos(performance.now() / 280));
       L.mesh.visible = Boolean(L.layer) && opacity > 0.001;
       if (!L.mesh.visible) continue;
       u.opacity.value = opacity;

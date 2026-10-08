@@ -103,20 +103,22 @@ const PANELS = {
       h('div.top10', {}, picture('top10.png', '오늘의집 인기 TOP10 (Figma 에셋 받기 전)')),
     ];
   },
-  catalog() {
+  catalog({ flow }) {
+    const picks = flow.picks ?? [];
     return [
-      h('h3.panel-title', {}, '오브제 · 아일랜드 식탁'),
+      h('h3.panel-title', {}, `오브제 · 아일랜드 식탁 · 제안 ${picks.length}/3`),
       h(
         'div.products',
         {},
         Object.entries(ISLANDS).map(([key, p]) =>
           h(
             'button.product',
-            { type: 'button', dataset: { target: 'product', value: key } },
+            { type: 'button', dataset: { target: 'product', value: key }, 'aria-pressed': String(picks.includes(key)) },
             picture(p.img, p.name),
             h('b', {}, p.name),
             h('small', {}, `${p.brand} · ${p.color}`),
             h('span.price', {}, won(p.price)),
+            picks.includes(key) && h('span.proposed', {}, '제안함'),
           ),
         ),
       ),
@@ -132,6 +134,7 @@ const PANELS = {
 };
 
 const FIG = '/assets/ui/figma';
+export const FLOOR_PHOTO = { portland: '/assets/ui/figma/floor-portland.jpg', flosso: '/assets/ui/figma/floor-flosso.jpg' }; // guide/타일옵션 이미지에서 자른 견본
 const ISLAND_PHOTO = { a: `${FIG}/island-a-photo.jpg`, b: `${FIG}/island-b-photo.jpg`, c: `${FIG}/island-c-photo.jpg` }; // 제품 페이지 캡처에서 사진만 잘라냄
 
 // 큰 카드(적용제품05~07): 사진 265×128 + 이름 + 설명 + 화살표
@@ -168,11 +171,11 @@ function detailBody(flow, expand) {
   } else if (expand === 'floor') {
     title = '바닥재 고르기';
     big = Object.entries(FLOORS).map(([key, f]) =>
-      bigCard({ title: f.name.replace('진 그란데 스퀘어 ', ''), sub: `${f.brand} · ${won(f.pricePerM2)}/㎡`, swatch: f.swatch, target: 'choice:floor', value: key, selected: floor === key }),
+      bigCard({ title: f.name.replace('진 그란데 스퀘어 ', ''), sub: `${f.brand} · ${won(f.pricePerM2)}/㎡`, img: FLOOR_PHOTO[key], target: 'choice:floor', value: key, selected: floor === key }),
     );
   } else {
     big = [
-      bigCard({ title: '바닥재', sub: floor ? `9.5㎡, ${FLOORS[floor].name.replace('진 그란데 스퀘어 ', '')}` : '9.5㎡, 기존 바닥', swatch: floor ? FLOORS[floor].swatch : '#d9d2c6', target: 'detail:floor' }),
+      bigCard({ title: '바닥재', sub: floor ? `9.5㎡, ${FLOORS[floor].name.replace('진 그란데 스퀘어 ', '')}` : '9.5㎡, 기존 바닥', ...(floor ? { img: FLOOR_PHOTO[floor] } : { swatch: '#d9d2c6' }), target: 'detail:floor' }),
       bigCard({ title: '아일랜드', sub: island ? ISLANDS[island].name : '선택 전', img: ISLAND_PHOTO[island ?? 'b'], target: 'detail:island' }),
       bigCard({ title: '가구 필름', sub: '00필름, H12345', img: ISLAND_PHOTO.b, target: 'detail:film' }),
     ];
@@ -236,6 +239,15 @@ export function renderPanel(body, name, ctx) {
  * 엔딩 보상 화면(게임 결과 화면처럼): 상담 완료 → 고객 반응 → 별 3개가 하나씩 → 기록 카운트업 → 칭호 획득 → 다시 하기
  * 레퍼런스: 학습 앱의 레슨 완료 화면(기록 카드 카운트업·색종이), 레이싱·요리 게임의 별점 결과, 업적 달성 배지
  */
+// 무드보드(S2-1): 김민선이 오늘의집 집들이에서 저장한 사진. 사진이 오면 이미지로 바꾼다(지금은 와이어프레임)
+export function renderMoodboard(el) {
+  el.textContent = '';
+  el.append(
+    h('div.mb-head', {}, h('b', {}, '김민선 님의 무드보드'), h('small', {}, '오늘의집 집들이에서 저장한 사진 4')),
+    h('div.mb-grid', {}, [1, 2, 3, 4].map((n) => h('span.mb-tile.is-wire', {}, `집들이 사진 ${n}`))),
+  );
+}
+
 export function renderEnding(el, flow, { onShown = () => {} } = {}) {
   el.textContent = '';
   const reward = rewardFor(flow);
