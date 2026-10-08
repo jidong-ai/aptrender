@@ -3,8 +3,9 @@
 
 // 배경 파노라마. 같은 공간의 렌더는 카메라를 움직이지 않는다(누끼가 제자리에 겹쳐야 하므로)
 export const PANOS = {
-  store_1: { name: '위브 매장 1' },
-  store_2: { name: '위브 매장 2' },
+  store_1: { name: '위브 매장 입구' },
+  store_2: { name: '위브 매장 자재 라이브러리' },
+  store_3: { name: '위브 매장 상담 구역' },
   counsel: { name: '상담실' },
   kitchen_front: { name: '주방 정면', view: 'front' },
   kitchen_side: { name: '주방 측면', view: 'side' },
@@ -58,8 +59,10 @@ export function parsePanoFile(file) {
 // ---------- 공간 위 좌표(yaw·pitch, 도) ----------
 // yaw 0 = 이미지 가로 중앙, +는 오른쪽. pitch +는 위. 렌더가 오면 태블릿 HUD의 좌표 표시로 재서 바꾼다(임시값)
 export const ANCHORS = {
+  // 매장 렌더(10/8): 바닥 화살표는 다음 공간 쪽 통로 바닥. 사람·가구와 겹치지 않는 자리
   store_1: { hotspot: { yaw: 8, pitch: -22, to: 'store_2', label: '안쪽으로' } },
-  store_2: { hotspot: { yaw: -20, pitch: -22, to: 'counsel', label: '상담실로' } },
+  store_2: { hotspot: { yaw: -6, pitch: -24, to: 'store_3', label: '안쪽으로' } },
+  store_3: { hotspot: { yaw: -7, pitch: -20, to: 'counsel', label: '상담실로' } },
   counsel: {},
   kitchen_front: {
     island: { yaw: 0, pitch: -16 },

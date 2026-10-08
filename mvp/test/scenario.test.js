@@ -95,7 +95,7 @@ test('S4(바닥재)는 태블릿·XR 모두 측면, S5는 다시 정면', () => 
 
 test('상담 중 안내는 가이드 UI, 매니저 말풍선은 매장 장면에서만', () => {
   for (const s of STEPS) {
-    if (s.caption?.speaker === 'manager') assert.ok(['S0-4', 'S0-5a', 'S0-5b'].includes(s.id), s.id);
+    if (s.caption?.speaker === 'manager') assert.ok(['S0-4', 'S0-5a', 'S0-5b', 'S0-5c'].includes(s.id), s.id);
     assert.notEqual(s.caption?.speaker, 'guide', s.id);
   }
 });

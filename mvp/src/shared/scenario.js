@@ -94,10 +94,19 @@ export const STEPS = [
   {
     id: 'S0-5b',
     chapter: 'opening',
+    caption: { speaker: 'manager', text: '매장에서는 고객이 바닥재·타일 같은 자재 샘플을 직접 보고 만져볼 수 있어요' },
+    target: 'hotspot',
+    hint: '화살표를 눌러 안으로 이동',
+    tablet: { pano: 'store_2' },
+    xr: { screen: 'standby' },
+  },
+  {
+    id: 'S0-5c',
+    chapter: 'opening',
     caption: { speaker: 'manager', text: '상담실에서 김민선 씨가 기다리고 있어요' },
     target: 'hotspot',
     hint: '화살표를 눌러 상담실로 이동',
-    tablet: { pano: 'store_2' },
+    tablet: { pano: 'store_3' },
     xr: { screen: 'standby' },
   },
   // ---------- 1 로딩 ----------
