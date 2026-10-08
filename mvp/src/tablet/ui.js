@@ -25,7 +25,7 @@ export const TOOLS = [
   { target: 'tool:measure', icon: 'measure', label: '치수확인' },
   { target: 'tool:annotate', icon: 'annotate', label: '주석추가' },
   { target: 'tool:options', icon: 'options', label: '옵션수정' },
-  { target: 'tool:light', icon: 'light', label: '조명변경' },
+  { target: 'tool:light', icon: 'light', label: '조도조절' },
 ];
 
 export const NAV = [
@@ -61,12 +61,13 @@ export function buildTimer(el) {
   return time;
 }
 
+// 카드 머리말(Figma 1438:3916 상단): 고객 사진 + 녹화 배지, "김민선 고객님 상담중...", 경과 시간, 닫기
 export function buildCardHead(el) {
   const time = h('span.card-time', {}, '00:00');
   el.append(
-    h('div.avatar', {}, picture('avatar.png', '')),
-    h('div', {}, h('div.card-title', {}, '김민선 고객님 상담중...'), time),
-    h('button.card-close', { type: 'button', dataset: { target: 'card-close' } }, icon('close', { size: 42 })),
+    h('div.card-avatar', {}, h('span.ca-photo', {}, h('img', { src: '/assets/ui/figma/avatar.png', alt: '' })), h('img.ca-ring', { src: '/assets/ui/figma/detail-avatar-ring.svg', alt: '' }), h('img.ca-rec', { src: '/assets/ui/figma/detail-rec.svg', alt: '' })),
+    h('div.card-titles', {}, h('div.card-title', {}, '김민선 고객님 상담중...'), time),
+    h('button.card-close', { type: 'button', dataset: { target: 'card-close' } }, h('img', { src: '/assets/ui/figma/close.svg', alt: '닫기' })),
   );
   return time;
 }
@@ -87,24 +88,6 @@ export function buildAnnotateBar(el, { onTool, onWidth, onErase }) {
 }
 
 // ---------- 카드 패널 ----------
-
-function estimateBox(choices, { note = true, bumpKey } = {}) {
-  const { items, total } = estimate(choices);
-  const totalEl = h('div.total', { dataset: { key: bumpKey ?? '' } }, won(total));
-  return h(
-    'div.estimate',
-    {},
-    h('small', {}, '예상 금액'),
-    totalEl,
-    h(
-      'ul',
-      {},
-      items.length ? items.map((i) => h('li', {}, h('span', {}, i.label), h('span', {}, won(i.amount)))) : h('li', {}, h('span', {}, '선택한 제품이 없어요')),
-    ),
-    ...items.filter((i) => i.formula).map((i) => h('div.formula', {}, i.formula)),
-    note && h('div.note', {}, '전시용 예시 금액입니다'),
-  );
-}
 
 const PANELS = {
   ohouse() {
@@ -139,98 +122,109 @@ const PANELS = {
       ),
     ];
   },
+  // 상담상세 = Figma 'XR/전문가상담/상담상세'(1438:3916) 본문. 텍스트·이미지만 체험 데이터로 바꾼다
   detail({ flow, step }) {
-    const { island, floor } = flow.choices;
-    const expand = step.tablet.expand;
-    const rows = [];
-    const row = (key, ico, file, label, value, target) =>
-      h(
-        'button.row',
-        { type: 'button', dataset: { target }, 'aria-expanded': String(expand === key) },
-        h('span.row-ico', {}, icon(ico, { file })),
-        h('span.row-text', {}, h('small', {}, label), h('b', {}, value)),
-        icon('chevron', { size: 24 }),
-      );
-    rows.push(row('floor', 'floor', 'detail-floor.svg', '바닥', floor ? FLOORS[floor].name : '기존 바닥', 'detail:floor'));
-    if (expand === 'floor') {
-      rows.push(
-        h(
-          'div.choices',
-          {},
-          Object.entries(FLOORS).map(([key, f]) =>
-            h(
-              'button.choice',
-              { type: 'button', dataset: { target: 'choice:floor', value: key }, 'aria-pressed': String(floor === key) },
-              h('span.swatch', { style: { background: f.swatch } }),
-              h('b', {}, f.name),
-              h('small', {}, `${won(f.pricePerM2)}/㎡`),
-            ),
-          ),
-        ),
-      );
-    }
-    rows.push(row('island', 'island', 'detail-island.svg', '아일랜드', island ? ISLANDS[island].name : '선택 안 함', 'detail:island'));
-    if (expand === 'island') {
-      rows.push(
-        h(
-          'div.choices',
-          {},
-          Object.entries(ISLANDS).map(([key, p]) =>
-            h(
-              'button.choice',
-              { type: 'button', dataset: { target: 'choice:island', value: key }, 'aria-pressed': String(island === key) },
-              picture(p.img, p.name),
-              h('b', {}, p.name),
-              h('small', {}, won(p.price)),
-            ),
-          ),
-        ),
-      );
-    }
-    rows.push(row('light', 'light', 'detail-light.svg', '조명', '기존 조명', 'detail:light'));
-    const box = estimateBox(flow.choices, { bumpKey: `${island}|${floor}` });
-    box.append(h('button.reset-btn', { type: 'button', dataset: { target: 'detail:reset' } }, icon('refresh', { size: 20 }), '선택 초기화하기'));
-    return [h('div.detail', {}, h('div.detail-rows', {}, rows), box)];
-  },
-  options({ step }) {
-    const picked = Boolean(step.tablet.chipPicked);
-    return [
-      h(
-        'div.options',
-        {},
-        h('div.options-head', {}, h('b', {}, '재질/색상'), h('span.dropdown', {}, '마루 · 진 그란데 스퀘어', icon('caret', { size: 20 }))),
-        h(
-          'div.chips',
-          {},
-          FLOOR_CHIPS.map((c, i) =>
-            h('button.chip', {
-              type: 'button',
-              style: { background: c },
-              dataset: { target: i === FLOOR_CHIP_SELECTED ? 'chip' : `chip:${i}` },
-              'aria-pressed': String(picked && i === FLOOR_CHIP_SELECTED),
-            }),
-          ),
-        ),
-        h('div.options-area', {}, '적용 영역: 주방 바닥 전체 (9.5㎡)'),
-        h('button.apply', { type: 'button', dataset: { target: 'apply' }, disabled: !picked }, '적용하기'),
-      ),
-    ];
+    return detailBody(flow, step.tablet.expand);
   },
   summary({ flow }) {
-    const { island, floor } = flow.choices;
-    return [
-      h('h3.panel-title', {}, '오늘 상담 요약'),
-      h(
-        'div.summary',
-        {},
-        h('div.row', {}, h('span.row-ico', {}, icon('island', { file: 'detail-island.svg' })), h('span.row-text', {}, h('small', {}, '아일랜드'), h('b', {}, island ? ISLANDS[island].name : '-'))),
-        h('div.row', {}, h('span.row-ico', {}, icon('floor', { file: 'detail-floor.svg' })), h('span.row-text', {}, h('small', {}, '바닥재'), h('b', {}, floor ? FLOORS[floor].name : '-'))),
-        estimateBox(flow.choices, { note: true }),
-        h('button.send', { type: 'button', dataset: { target: 'send-report' } }, '상담 리포트 보내기'),
-      ),
-    ];
+    return detailBody(flow, null);
   },
 };
+
+const FIG = '/assets/ui/figma';
+const ISLAND_PHOTO = { a: `${FIG}/island-a-photo.jpg`, b: `${FIG}/island-b-photo.jpg`, c: `${FIG}/island-c-photo.jpg` }; // 제품 페이지 캡처에서 사진만 잘라냄
+
+// 큰 카드(적용제품05~07): 사진 265×128 + 이름 + 설명 + 화살표
+function bigCard({ title, sub, img, swatch, target, value, selected }) {
+  const pic = swatch ? h('span.dc-img.is-swatch', { style: { background: swatch } }) : h('span.dc-img', {}, h('img', { src: img, alt: '' }));
+  return h(
+    'button.dc-big',
+    { type: 'button', dataset: { target, value }, 'aria-pressed': selected === undefined ? undefined : String(selected) },
+    pic,
+    h('span.dc-row', {}, h('span.dc-text', {}, h('b', {}, title), h('small', {}, sub)), h('img.dc-arrow', { src: `${FIG}/detail-arrow.svg`, alt: '' })),
+  );
+}
+// 작은 카드(적용제품09): Figma 그대로(흐리게, 이번 체험에서 다루지 않는 항목)
+const SMALL = ['싱크대 상판', '주방 벽 타일', '가구', '벽지', '가구', '가구'];
+const smallCard = (title) =>
+  h(
+    'div.dc-small',
+    {},
+    h('img.dc-ellipse', { src: `${FIG}/detail-floor.svg`, alt: '' }),
+    h('span.dc-text', {}, h('b', {}, title), h('small', {}, '5㎡')),
+    h('img.dc-arrow', { src: `${FIG}/detail-arrow.svg`, alt: '' }),
+  );
+
+function detailBody(flow, expand) {
+  const { island, floor } = flow.choices;
+  const { total } = estimate(flow.choices);
+  let title = '적용 제품 한눈에 보기';
+  let big;
+  if (expand === 'island') {
+    title = '아일랜드 제품 고르기';
+    big = Object.entries(ISLANDS).map(([key, p]) =>
+      bigCard({ title: p.name, sub: `${p.brand} · ${won(p.price)}`, img: ISLAND_PHOTO[key], target: 'choice:island', value: key, selected: island === key }),
+    );
+  } else if (expand === 'floor') {
+    title = '바닥재 고르기';
+    big = Object.entries(FLOORS).map(([key, f]) =>
+      bigCard({ title: f.name.replace('진 그란데 스퀘어 ', ''), sub: `${f.brand} · ${won(f.pricePerM2)}/㎡`, swatch: f.swatch, target: 'choice:floor', value: key, selected: floor === key }),
+    );
+  } else {
+    big = [
+      bigCard({ title: '바닥재', sub: floor ? `9.5㎡, ${FLOORS[floor].name.replace('진 그란데 스퀘어 ', '')}` : '9.5㎡, 기존 바닥', swatch: floor ? FLOORS[floor].swatch : '#d9d2c6', target: 'detail:floor' }),
+      bigCard({ title: '아일랜드', sub: island ? ISLANDS[island].name : '선택 전', img: ISLAND_PHOTO[island ?? 'b'], target: 'detail:island' }),
+      bigCard({ title: '가구 필름', sub: '00필름, H12345', img: ISLAND_PHOTO.b, target: 'detail:film' }),
+    ];
+  }
+  return [
+    h('div.dc-head', {}, h('b', {}, title), h('img.dc-help', { src: `${FIG}/detail-help.svg`, alt: '' }),
+      h('button.dc-reset', { type: 'button', dataset: { target: 'detail:reset' } }, h('img', { src: `${FIG}/refresh.svg`, alt: '' }), '선택 초기화하기')),
+    h('div.dc-grid', {}, h('div.dc-bigs', {}, big), h('div.dc-smalls', {}, SMALL.map(smallCard))),
+    h('img.dc-divider', { src: `${FIG}/detail-divider.svg`, alt: '' }),
+    h(
+      'div.dc-foot',
+      {},
+      h('div', {}, h('b.dc-formula', {}, '(1)재료비 + (2)철거비 + (3)아일랜드 시공비'), h('p.dc-note', {}, '*실제 시공비는 본 계산과 상이할 수 있습니다. 예상금액은 참고용으로만\n확인해주시길 바랍니다.')),
+      h('div.dc-price', {}, h('small', {}, '=예상금액'), h('b.total', { dataset: { key: `${island}|${floor}` } }, won(total))),
+    ),
+  ];
+}
+
+/**
+ * 옵션수정 패널(Figma 'XR/툴바/옵션 수정' 1437:3759의 '옵션수정패널_재질색상').
+ * 카드 없이 공간 위에 뜨고, 지시선이 바닥 적용 영역을 가리킨다
+ */
+export function renderOptionEditor(el, { picked }) {
+  el.textContent = '';
+  const chips = FLOOR_CHIPS.map((c, i) =>
+    h('button.oe-chip', {
+      type: 'button',
+      style: { background: c },
+      dataset: { target: i === FLOOR_CHIP_SELECTED ? 'chip' : `chip:${i}` },
+      'aria-pressed': String(picked && i === FLOOR_CHIP_SELECTED),
+    }),
+  );
+  const arrow = (side) => h(`span.oe-arrow.oe-arrow-${side}`, {}, h('img', { src: `${FIG}/chevron-right.svg`, alt: '' }));
+  el.append(
+    arrow('left'),
+    h(
+      'div.oe-wrap',
+      {},
+      h(
+        'div.oe-panel',
+        {},
+        h('div.oe-head', {}, h('b', {}, '재질/색상'), h('span.oe-select', {}, '바닥재', h('img', { src: `${FIG}/option-caret.svg`, alt: '' }))),
+        h('img.oe-line', { src: `${FIG}/option-line.svg`, alt: '' }),
+        h('div.oe-sub', {}, h('span', {}, '색상'), h('span.oe-name', {}, picked ? FLOORS.portland.name.replace('진 그란데 스퀘어 ', '') : '')),
+        h('div.oe-chips', {}, chips),
+      ),
+      h('button.oe-apply', { type: 'button', dataset: { target: 'apply' }, disabled: !picked }, '적용하기'),
+    ),
+    arrow('right'),
+    h('img.oe-leader', { src: `${FIG}/option-leader.svg`, alt: '' }),
+  );
+}
 
 export function renderPanel(body, name, ctx) {
   body.textContent = '';

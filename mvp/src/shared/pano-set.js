@@ -136,8 +136,9 @@ export async function createPanoSet(viewer, { size, maxWidth, log = () => {} }) 
   async function wireFloor(pano, option) {
     return once(`wire:floor:${pano}:${option}`, async () => {
       const mask = await floorMask(pano);
-      const label = `바닥재 · ${FLOORS[option]?.name ?? option}`;
-      const drawn = mask && makeMaskedLayer({ mask, color: FLOOR_WIRE[option] ?? '#8a6a4f', label });
+      const area = option === 'area'; // 옵션수정 중 '선택 영역' 표시
+      const label = area ? '' : `바닥재 · ${FLOORS[option]?.name ?? option}`;
+      const drawn = mask && makeMaskedLayer({ mask, color: area ? '#1aa0ff' : FLOOR_WIRE[option] ?? '#8a6a4f', label, plain: area });
       if (drawn) return { texture: viewer.canvasTexture(drawn.canvas), rect: drawn.rect };
       const rect = PLACEHOLDER_RECT.floor;
       return { texture: viewer.canvasTexture(makePlaceholderLayer({ kind: 'floor', rect, label, color: FLOORS[option]?.swatch })), rect };

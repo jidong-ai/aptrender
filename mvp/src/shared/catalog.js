@@ -12,9 +12,9 @@ export const FLOORS = {
   flosso: { name: '진 그란데 스퀘어 플로쏘', brand: '동화자연마루', pricePerM2: 58000, swatch: '#d9d4cb' },
 };
 
-// 옵션수정 패널의 색상 칩(Figma 1043:1231). selected = 체험에서 누를 칩
+// 옵션수정 패널의 색상 칩(Figma 1437:3759). selected = 체험에서 누를 칩
 export const FLOOR_CHIPS = ['#e6dccb', '#dac9ac', '#d3b688', '#c69a61', '#c2b183', '#ac9a80', '#97673b', '#6e4626'];
-export const FLOOR_CHIP_SELECTED = 5;
+export const FLOOR_CHIP_SELECTED = 1; // Figma 1437:3759에서 선택된 칩(두 번째)
 
 export const ESTIMATE = {
   areaM2: 9.5, // 주방 바닥 면적(예시)

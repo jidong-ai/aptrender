@@ -132,7 +132,7 @@ export function makePlaceholderLayer({ kind, rect, label, color = '#8a6a4f', wid
  *  mask: 2:1 캔버스(불투명한 곳 = 적용 영역). Figma 펜툴로 그린 SVG나 기본 다각형을 그려 넣은 것
  *  반환 { canvas, rect } — rect는 영역을 감싸는 사각형(이미지 기준 0~1)
  */
-export function makeMaskedLayer({ mask, color = '#8a6a4f', label = '' }) {
+export function makeMaskedLayer({ mask, color = '#8a6a4f', label = '', plain = false }) {
   const W = mask.width;
   const H = mask.height;
   const data = mask.getContext('2d').getImageData(0, 0, W, H).data;
@@ -160,6 +160,13 @@ export function makeMaskedLayer({ mask, color = '#8a6a4f', label = '' }) {
   g.globalCompositeOperation = 'source-in'; // 마스크 모양 그대로 칠한다
   g.fillStyle = color;
   g.fillRect(0, 0, w, h);
+  if (plain) {
+    // 단색 반투명(Figma '선택 영역': #1AA0FF 20%)
+    g.globalCompositeOperation = 'destination-in';
+    g.fillStyle = 'rgba(0,0,0,0.3)';
+    g.fillRect(0, 0, w, h);
+    return { canvas, rect: [x0 / W, y0 / H, (x1 + 1) / W, (y1 + 1) / H] };
+  }
   g.globalCompositeOperation = 'source-atop';
   g.strokeStyle = 'rgba(255,255,255,0.45)';
   g.lineWidth = 1.5;

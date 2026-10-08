@@ -40,6 +40,7 @@ export const STEPS = [
     target: 'prologue-next',
     back: 'S0-0',
     hint: '화면을 눌러 계속',
+    auto: 2000, // 누르지 않아도 2초 뒤 다음 장
     quiet: true,
     copy: '오늘의집 Weave는 소비자의 인테리어 결정을 도와주는 XR서비스에요',
     tablet: { screen: 'prologue', page: 1 },
@@ -51,6 +52,7 @@ export const STEPS = [
     target: 'prologue-next',
     back: 'S0-1',
     hint: '화면을 눌러 계속',
+    auto: 2000, // 누르지 않아도 2초 뒤 다음 장
     quiet: true,
     copy: '소비자가 매장상담을 예약한 후, 꾸미고 싶은 공간을 3d 스캔해오면\n매장에서 오늘의집 매니저와 함께 공간을 완성해나가요',
     tablet: { screen: 'prologue', page: 2 },

@@ -13,7 +13,7 @@ import { icon, loadUiAssets } from '../shared/ui-assets.js';
 import { wrapYaw } from '../shared/angles.js';
 import { createCoach } from './coach.js';
 import { coverage, createAnnotator } from './annotate.js';
-import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, mmss, renderEnding, renderPanel } from './ui.js';
+import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, mmss, renderEnding, renderOptionEditor, renderPanel } from './ui.js';
 
 const VIEW_SEND_MS = 100; // managerView 10Hz
 const FRAME_H = 1292; // Figma 매니저 프레임 높이
@@ -270,6 +270,7 @@ function render(state) {
   const { flow } = state;
   const step = STEP[flow.step];
   const stepChanged = flow.step !== lastStep;
+  const lastStepBefore = lastStep;
   lastStep = flow.step;
   if (stepChanged) {
     stepEnteredLocal = performance.now();
@@ -314,11 +315,16 @@ function render(state) {
     b.setAttribute('aria-pressed', String(Boolean(on)));
   }
 
-  // 가운데 카드
+  // 상담 카드(Figma 'XR/전문가상담/상담상세'): 오늘의집 카탈로그·상담상세(전체 견적)에만. 옵션수정은 카드 없이 패널만
+  const cardPanel = panel && panel !== 'options' ? panel : null;
   $('loading').hidden = t.panel !== 'loading';
-  $('card').hidden = !panel;
+  $('card').hidden = $('cardDim').hidden = !cardPanel;
+  $('ui').classList.toggle('is-over', Boolean(cardPanel));
+  $('reportCta').hidden = step.target !== 'send-report';
+  $('opt').hidden = panel !== 'options';
   const panelKey = `${flow.step}|${flow.choices.island}|${flow.choices.floor}`;
-  if (panel && panelKey !== lastPanelKey) {
+  if (panel === 'options' && panelKey !== lastPanelKey) renderOptionEditor($('opt'), { picked: Boolean(t.chipPicked) });
+  if (cardPanel && panelKey !== lastPanelKey) {
     const prevTotal = $('cardBody').querySelector('.total')?.textContent;
     renderPanel($('cardBody'), panel, { flow, step });
     const total = $('cardBody').querySelector('.total');
@@ -332,9 +338,13 @@ function render(state) {
   look.enabled = !t.annotate;
   if (stepChanged && t.annotate) turnTo(checkCenter);
   if (stepChanged && step.id === 'S2-2b') turnTo(dimMid);
+  // 옵션수정: 지시선이 가리키는 바닥 적용 영역이 화면 아래쪽에 오도록
+  if (stepChanged && t.panel === 'options' && STEP[lastStepBefore]?.tablet.panel !== 'options') turnTo({ yaw: 0, pitch: -14 });
 
   // 공간 위 표시
   const want = tabletSceneFor(flow);
+  // 옵션수정 중에는 바닥 적용 영역을 파랗게 표시(Figma '선택 영역', #1AA0FF 20%)
+  if (panel === 'options' && !want.floor) want.floor = 'area';
   const spot = ANCHORS[want.pano]?.hotspot;
   hotspot.set(step.target === 'hotspot' ? spot : null);
   hotspotEl.querySelector('.hotspot-label').textContent = spot?.label ?? '';
