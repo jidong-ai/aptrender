@@ -201,7 +201,7 @@ const FIG = '/assets/ui/figma';
 const OFFER = {
   island: {
     title: '매니저가 제안한 아일랜드',
-    card: (k) => ({ img: `${FIG}/island-${k}-photo.jpg`, name: ISLANDS[k].name, sub: `${ISLANDS[k].brand} · ${won(ISLANDS[k].price)}` }),
+    card: (k) => ({ img: ISLANDS[k].photo, name: ISLANDS[k].name, sub: `${ISLANDS[k].brand} · ${won(ISLANDS[k].price)}` }),
   },
   floor: {
     title: '매니저가 제안한 바닥재',

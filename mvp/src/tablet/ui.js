@@ -114,7 +114,7 @@ const PANELS = {
           h(
             'button.product',
             { type: 'button', dataset: { target: 'product', value: key }, 'aria-pressed': String(picks.includes(key)) },
-            picture(p.img, p.name),
+            h('span.pic', {}, h('img', { src: p.photo, alt: p.name })),
             h('b', {}, p.name),
             h('small', {}, `${p.brand} · ${p.color}`),
             h('span.price', {}, won(p.price)),
@@ -135,7 +135,7 @@ const PANELS = {
 
 const FIG = '/assets/ui/figma';
 export const FLOOR_PHOTO = { portland: '/assets/ui/figma/floor-portland.jpg', flosso: '/assets/ui/figma/floor-flosso.jpg' }; // guide/타일옵션 이미지에서 자른 견본
-const ISLAND_PHOTO = { a: `${FIG}/island-a-photo.jpg`, b: `${FIG}/island-b-photo.jpg`, c: `${FIG}/island-c-photo.jpg` }; // 제품 페이지 캡처에서 사진만 잘라냄
+const ISLAND_PHOTO = Object.fromEntries(Object.entries(ISLANDS).map(([k, p]) => [k, p.photo]));
 
 // 큰 카드(적용제품05~07): 사진 265×128 + 이름 + 설명 + 화살표
 function bigCard({ title, sub, img, swatch, target, value, selected }) {

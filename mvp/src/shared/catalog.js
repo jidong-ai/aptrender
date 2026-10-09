@@ -1,10 +1,10 @@
 // 체험에 나오는 제품과 예상 금액. 금액은 모두 전시용 예시 값이다(실제 판매가 아님).
-// img = assets/ui/figma/ 안의 파일 이름(Figma에서 받은 썸네일)
+// photo = 제품 사진(assets/product/, 사용자 업로드). 카탈로그·XR 제품 카드·상담상세에 쓴다
 
 export const ISLANDS = {
-  a: { name: '샤인 E0 렌지대 홈바', brand: '플레이너스', color: '화이트', price: 389000, img: 'island-a.png' },
-  b: { name: '아떼 원목 아일랜드 식탁', brand: '아떼', color: '마호가니', price: 690000, img: 'island-b.png' },
-  c: { name: '국내제작 도라 아일랜드 수납식탁', brand: '이홈데코', color: '오크', price: 459000, img: 'island-c.png' },
+  a: { name: '샤인 E0 렌지대 홈바', brand: '플레이너스', color: '화이트', price: 389000, photo: '/assets/product/island-a.jpg' },
+  b: { name: '아떼 원목 아일랜드 식탁', brand: '아떼', color: '마호가니', price: 690000, photo: '/assets/product/island-b.jpg' },
+  c: { name: '국내제작 도라 아일랜드 수납식탁', brand: '이홈데코', color: '오크', price: 459000, photo: '/assets/product/island-c.jpg' },
 };
 
 export const FLOORS = {
