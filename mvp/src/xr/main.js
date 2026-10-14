@@ -1,5 +1,6 @@
 import 'pretendard/dist/web/variable/pretendardvariable.css';
 import '../shared/base.css';
+import '../shared/moodboard.css';
 import './xr.css';
 import { createSync } from '../shared/sync.js';
 import { mountHud } from '../shared/hud.js';
@@ -14,6 +15,7 @@ import { createAnchors, createSphereLines } from '../shared/overlays.js';
 import { icon, loadUiAssets } from '../shared/ui-assets.js';
 import { wrapYaw } from '../shared/angles.js';
 import { createManagerFrame } from './manager-frame.js';
+import { renderMoodboardCard } from '../shared/moodboard.js';
 
 const STAGE_W = 1920;
 const STAGE_H = 1080;
@@ -187,15 +189,6 @@ function renderReport(flow) {
   setTimeout(() => confetti($('report'), { origin: { x: 0.5, y: 0.3 } }), 1200);
 }
 
-// ---------- 김민선 무드보드 (S2-1) ----------
-function renderMoodboard() {
-  const box = $('xrMoodboard');
-  box.textContent = '';
-  const grid = el('div', 'mb-grid');
-  for (let n = 1; n <= 4; n += 1) grid.append(el('span', 'mb-tile is-wire', `집들이 사진 ${n}`));
-  box.append(el('b', '', '내 무드보드'), el('small', '', '오늘의집 집들이에서 저장한 사진'), grid);
-}
-
 // ---------- 제품 카드: 매니저가 제안 → 김민선이 고른다 ----------
 const FIG = '/assets/ui/figma';
 const OFFER = {
@@ -339,7 +332,7 @@ function onState(state) {
   }
 
   $('xrMoodboard').hidden = !(step.xr.moodboard && screen === 'home');
-  if (step.xr.moodboard && stepChanged) renderMoodboard();
+  if (step.xr.moodboard && stepChanged) renderMoodboardCard($('xrMoodboard'), { title: '내 무드보드', tags: ['#원목', '#다크톤', '#아일랜드식탁'], shared: true });
   if (stepChanged) {
     chooseTimers.forEach(clearTimeout);
     chooseTimers = [];

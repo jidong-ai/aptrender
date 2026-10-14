@@ -239,15 +239,6 @@ export function renderPanel(body, name, ctx) {
  * 엔딩 보상 화면(게임 결과 화면처럼): 상담 완료 → 고객 반응 → 별 3개가 하나씩 → 기록 카운트업 → 칭호 획득 → 다시 하기
  * 레퍼런스: 학습 앱의 레슨 완료 화면(기록 카드 카운트업·색종이), 레이싱·요리 게임의 별점 결과, 업적 달성 배지
  */
-// 무드보드(S2-1): 김민선이 오늘의집 집들이에서 저장한 사진. 사진이 오면 이미지로 바꾼다(지금은 와이어프레임)
-export function renderMoodboard(el) {
-  el.textContent = '';
-  el.append(
-    h('div.mb-head', {}, h('b', {}, '김민선 님의 무드보드'), h('small', {}, '오늘의집 집들이에서 저장한 사진 4')),
-    h('div.mb-grid', {}, [1, 2, 3, 4].map((n) => h('span.mb-tile.is-wire', {}, `집들이 사진 ${n}`))),
-  );
-}
-
 export function renderEnding(el, flow, { onShown = () => {} } = {}) {
   el.textContent = '';
   const reward = rewardFor(flow);

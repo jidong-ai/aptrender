@@ -123,7 +123,7 @@ export const STEPS = [
     id: 'S2-1',
     chapter: 'kitchen',
     guide: '김민선 씨가 무드보드를 공유했어요',
-    caption: { speaker: 'customer', text: '평소에 요리하는 걸 좋아해서, 이 사진들처럼 주방에 아일랜드를 추가하고 싶어요.' },
+    caption: { speaker: 'customer', text: '이 사진들처럼 주방에 조리대 겸 식탁으로 쓸 수 있는 아일랜드를 추가하고,\n바닥재도 차분한 톤으로 맞추고 싶어요' },
     target: 'caption-next',
     hint: '다음',
     look: true, // 충분히 둘러본 뒤에 '다음'이 열린다

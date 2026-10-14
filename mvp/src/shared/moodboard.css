@@ -1,0 +1,117 @@
+/* 김민선 무드보드 카드 (Figma 1179:240 태블릿 · 1181:159 XR). 위치는 각 화면 CSS(.moodboard / .xr-moodboard)에서 */
+.mb {
+  box-sizing: border-box;
+  width: 518px;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border-radius: 32px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.55);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  font-family: var(--font);
+  line-height: normal;
+  animation: mb-in 0.45s ease both;
+}
+
+@keyframes mb-in {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+}
+
+.mb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mb-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.mb-titles b {
+  font-size: 24px;
+  font-weight: 700;
+  color: #595146; /* Brown/100 */
+}
+
+.mb-titles small {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgb(89 81 70 / 0.7);
+}
+
+.mb-shared {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 12px;
+  border-radius: 999px;
+  background: #dcebf5;
+  color: #205ba5;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mb-shared img {
+  width: 20px;
+  height: 20px;
+}
+
+.mb-grid {
+  display: grid;
+  grid-template-columns: 225px 225px;
+  gap: 12px;
+}
+
+.mb-tile {
+  position: relative;
+  width: 225px;
+  height: 225px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #d9d2c6;
+}
+
+.mb-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mb-by {
+  position: absolute;
+  left: 10px;
+  top: 190px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.85);
+  color: #3f3f3f;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.mb-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.mb-tags span {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.3);
+  color: #696969;
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}

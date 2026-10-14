@@ -215,9 +215,10 @@
 .subtitle {
   position: absolute;
   left: 50%;
-  bottom: 270px;
+  bottom: 260px;
   transform: translateX(-50%);
-  max-width: 1300px;
+  width: max-content; /* 가운데 정렬 + 왼쪽 절반 폭에 갇혀 일찍 줄바꿈되지 않게 */
+  max-width: 1500px;
   display: flex;
   align-items: baseline;
   gap: 18px;
@@ -229,6 +230,7 @@
   font-weight: 600;
   line-height: 1.45;
   word-break: keep-all;
+  white-space: pre-line; /* 태블릿 말풍선과 같은 자리에서 줄바꿈 */
 }
 
 .subtitle b {
@@ -491,55 +493,14 @@
   }
 }
 
-/* ---------- 김민선 무드보드 (S2-1) ---------- */
+/* ---------- 김민선 무드보드 (S2-1, Figma 1181:159): 카드 모양은 shared/moodboard.css ----------
+   Figma XR 프레임(2264×1292)을 1920×1080 무대에 맞춰 0.836배. 가운데 위, 자막 위에서 끝난다 */
 .xr-moodboard {
   position: absolute;
-  left: 60px;
-  top: 220px;
-  width: 400px;
-  padding: 24px;
-  border-radius: 24px;
-  background: rgb(255 255 255 / 0.3);
-  box-shadow: var(--glass-10);
-  backdrop-filter: blur(40px);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  animation: offer-in 0.5s ease both;
-}
-
-.xr-moodboard b {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.xr-moodboard small {
-  font-size: 16px;
-  opacity: 0.85;
-  margin-bottom: 10px;
-}
-
-.xr-moodboard .mb-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.mb-tile {
-  aspect-ratio: 1;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  font-weight: 600;
-  overflow: hidden;
-}
-
-.mb-tile.is-wire {
-  background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.3) 0 10px, rgb(255 255 255 / 0.15) 10px 20px);
-  border: 1px dashed rgb(255 255 255 / 0.5);
+  left: 50%;
+  top: 180px; /* 옵션변경 알약(72~124) 아래, 두 줄 자막 위에서 끝난다 */
+  transform: translateX(-50%) scale(0.836);
+  transform-origin: 50% 0;
 }
 
 /* ---------- 제품 카드: 매니저 제안 → 김민선이 고른다 (S3·S4) ---------- */
