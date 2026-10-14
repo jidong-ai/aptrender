@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { LAYERS, parsePanoFile } from '../src/shared/scene.js';
+import { CUT_PLACE, LAYERS, parsePanoFile } from '../src/shared/scene.js';
 
 const DIR = fileURLToPath(new URL('../assets/pano/', import.meta.url));
 const BUILT = path.join(DIR, 'built');
@@ -92,12 +92,34 @@ async function makeLayerFromCut(pair) {
     console.log(`  ! ${pair.cut}: 투명 배경이 없습니다. 누끼를 딴 뒤 PNG(투명)로 저장하세요`);
     return null;
   }
+  if (Math.abs(meta.width / meta.height - 2) > 0.01 && CUT_PLACE[pair.key]) return makePlacedLayer(pair, meta, t0);
   if (Math.abs(meta.width / meta.height - 2) > 0.01) {
     console.log(`  ! ${pair.cut}: 크기가 ${meta.width}×${meta.height}입니다. 원본 파노라마와 같은 크기(가로:세로 2:1)로, 자르지 말고 저장하세요`);
     return null;
   }
   const alpha = await open(pair.cut).resize(DW, DH, { fit: 'fill' }).extractChannel('alpha').raw().toBuffer();
   return writeLayer(pair, alpha, (W, H, area) => open(pair.cut).resize(W, H, { fit: 'fill' }).extract(area).ensureAlpha().raw().toBuffer(), 4, t0, '누끼');
+}
+
+// 오브제만 잘라 낸 누끼 → scene.js CUT_PLACE의 자리(yaw·bottom·height)에 세운 레이어
+async function makePlacedLayer(pair, meta, t0) {
+  const { yaw, bottom, height } = CUT_PLACE[pair.key];
+  const hFrac = height / 180; // 세로 비율(0~1)
+  const wFrac = (hFrac * (meta.width / meta.height)) / 2; // 가로 비율: 파노라마는 가로가 세로의 2배
+  const cx = 0.5 + yaw / 360;
+  const by = 0.5 - bottom / 180;
+  const rect = [cx - wFrac / 2, by - hFrac, cx + wFrac / 2, by].map((v) => Math.round(v * 1e5) / 1e5);
+  const outFiles = {};
+  for (const [size, W] of [['4k', 4096], ['8k', 8192]]) {
+    const width = Math.round((rect[2] - rect[0]) * W);
+    const heightPx = Math.round((rect[3] - rect[1]) * (W / 2));
+    const name = `${pair.key}_${size}.webp`;
+    await open(pair.cut).resize(width, heightPx, { fit: 'fill' }).webp({ quality: 90, alphaQuality: 95, exact: true, effort: 4 }).toFile(path.join(LAYER_DIR, name));
+    outFiles[size] = `built/layers/${name}`;
+  }
+  const coverage = Math.round((rect[2] - rect[0]) * (rect[3] - rect[1]) * 1e4) / 1e4;
+  console.log(`  ${pair.key} (${pair.kind === 'island' ? '아일랜드' : '바닥재'}, 누끼·자리 지정 yaw ${yaw}° bottom ${bottom}° height ${height}°) · ${sec(t0)}`);
+  return { kind: pair.kind, rect, coverage, files: outFiles };
 }
 
 async function makeLayer(pair) {
@@ -189,7 +211,7 @@ if (pairs.length) {
   console.log(`\n레이어 오려내기 (${pairs.length}개 조합)`);
   const next = { version: 1, layers: {} };
   for (const pair of pairs) {
-    const sig = pair.cut ? [signature(pair.cut), signature(pair.from)] : [signature(pair.from), signature(pair.to), 'auto'];
+    const sig = pair.cut ? [signature(pair.cut), signature(pair.from), JSON.stringify(CUT_PLACE[pair.key] ?? null)] : [signature(pair.from), signature(pair.to), 'auto'];
     const old = manifest.layers?.[pair.key];
     const fresh = old && JSON.stringify(old.sources) === JSON.stringify(sig) && Object.values(old.files).every((f) => fs.existsSync(path.join(DIR, f)));
     if (fresh && !force) {

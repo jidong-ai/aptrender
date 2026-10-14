@@ -15,7 +15,7 @@ import { wrapYaw } from '../shared/angles.js';
 import { createCoach } from './coach.js';
 import { coverage, createAnnotator } from './annotate.js';
 import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, mmss, renderEnding, renderOptionEditor, renderPanel } from './ui.js';
-import { renderMoodboardCard } from '../shared/moodboard.js';
+import { MOODBOARD_TAGS, renderMoodboardCard } from '../shared/moodboard.js';
 
 const VIEW_SEND_MS = 100; // managerView 10Hz
 const FRAME_H = 1292; // Figma 매니저 프레임 높이
@@ -332,7 +332,7 @@ function render(state) {
     $('guideUi').dataset.text = guide;
   }
   // 김민선 무드보드(S2-1)
-  if (t.moodboard && $('moodboard').hidden) renderMoodboardCard($('moodboard'), { title: '김민선 님의 무드보드', tags: ['#원목', '#대리석', '#아일랜드식탁'] });
+  if (t.moodboard && $('moodboard').hidden) renderMoodboardCard($('moodboard'), { title: '김민선 님의 무드보드', tags: MOODBOARD_TAGS });
   $('moodboard').hidden = !t.moodboard;
 
   // 상담 화면 크롬

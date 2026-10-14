@@ -284,8 +284,8 @@ export const STEPS = [
     target: 'send-report',
     cta: true,
     hint: '상담 리포트 보내기',
-    tablet: { pano: 'kitchen_front', panel: 'summary' },
-    xr: { screen: 'home' },
+    tablet: { pano: 'kitchen_side', panel: 'summary' }, // 아일랜드·바닥재가 함께 보이는 측면에서 마무리
+    xr: { screen: 'home', pano: 'kitchen_side' },
   },
   {
     id: 'S5-2',
@@ -296,8 +296,8 @@ export const STEPS = [
     hint: '다시 체험하기',
     auto: 25000,
     next: 'reset',
-    tablet: { screen: 'ending', pano: 'kitchen_front' },
-    xr: { screen: 'ending', report: true },
+    tablet: { screen: 'ending', pano: 'kitchen_side' },
+    xr: { screen: 'ending', pano: 'kitchen_side', report: true },
   },
 ];
 

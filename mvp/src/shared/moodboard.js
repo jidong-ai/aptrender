@@ -8,6 +8,8 @@ export const MOODBOARD_PHOTOS = [
   { img: '/assets/ui/moodboard/mb-4.jpg', by: '뚠이95' },
 ];
 
+export const MOODBOARD_TAGS = ['#원목', '#대리석', '#다크톤'];
+
 const el = (tag, cls, text) => Object.assign(document.createElement(tag), { className: cls ?? '', textContent: text ?? '' });
 
 /** 무드보드 카드를 box 안에 그린다. shared = XR(고객) 쪽의 '매니저에게 공유됨' 표시 */

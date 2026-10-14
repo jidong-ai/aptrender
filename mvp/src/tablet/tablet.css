@@ -83,8 +83,7 @@
   display: block;
 }
 
-.pic.is-wire,
-.loading-img.is-wire {
+.pic.is-wire {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1954,18 +1953,18 @@
   background: transparent;
 }
 
-/* ---------- 로딩: 김민선 XR 헤드셋 착용 이미지 자리 ---------- */
+/* ---------- 로딩: 김민선이 XR 헤드셋을 쓰는 누끼(상반신) ---------- */
 .loading-img {
-  height: 260px;
-  margin: -16px -8px 28px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
+  display: block;
+  height: 320px;
+  margin: -24px auto 12px;
+  animation: headset-in 0.6s ease both;
 }
 
-.loading-img.is-wire {
-  background: repeating-linear-gradient(135deg, rgb(0 0 0 / 0.06) 0 10px, rgb(0 0 0 / 0.02) 10px 20px);
-  border: 1px dashed rgb(0 0 0 / 0.2);
+@keyframes headset-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }
+

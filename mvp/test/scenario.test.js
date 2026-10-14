@@ -82,7 +82,7 @@ test('단계 이동은 건너뛴 선택을 기본값으로 채운다', () => {
   assert.equal(jumpFlow(flow, 'S9'), null);
 });
 
-test('S4(바닥재)는 태블릿·XR 모두 측면, S5는 다시 정면', () => {
+test('S4(바닥재)부터 끝까지 태블릿·XR 모두 측면(아일랜드 누끼·바닥재가 함께 보이는 시점)', () => {
   const base = createFlow(0);
   assert.equal(xrSceneFor(base).pano, null);
   for (const id of ['S4-1', 'S4-2c', 'S4-3b']) {
@@ -90,7 +90,7 @@ test('S4(바닥재)는 태블릿·XR 모두 측면, S5는 다시 정면', () => 
     assert.equal(xrSceneFor(f).pano, 'kitchen_side', id);
     assert.equal(tabletSceneFor(f).pano, 'kitchen_side', id);
   }
-  assert.deepEqual(xrSceneFor(jumpFlow(base, 'S5-1', 0)), { pano: 'kitchen_front', island: 'b', floor: 'portland' });
+  assert.deepEqual(xrSceneFor(jumpFlow(base, 'S5-1', 0)), { pano: 'kitchen_side', island: 'b', floor: 'portland' });
 });
 
 test('상담 중 안내는 가이드 UI, 매니저 말풍선은 매장 장면에서만', () => {

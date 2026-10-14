@@ -11,7 +11,8 @@ export const PANOS = {
   kitchen_side: { name: '주방 측면', view: 'side' },
 };
 
-// 누끼 레이어. pano = 이 레이어가 겹쳐지는 배경. 바닥재는 아일랜드 없이 렌더한다(바닥 → 아일랜드 순으로 겹침)
+// 누끼 레이어. pano = 이 레이어가 겹쳐지는 배경.
+// 체험은 아일랜드 배치(S3) → 바닥재 변경(S4) 순서. 화면에는 배경 위에 바닥재, 그 위에 아일랜드를 겹친다(아일랜드가 바닥 위에 서 있으므로) → 바닥재는 아일랜드 없이 렌더
 export const LAYERS = {
   island_a_front: { kind: 'island', option: 'a', pano: 'kitchen_front' },
   island_b_front: { kind: 'island', option: 'b', pano: 'kitchen_front' },
@@ -22,6 +23,12 @@ export const LAYERS = {
   floor_flosso_front: { kind: 'floor', option: 'flosso', pano: 'kitchen_front' },
   floor_portland_side: { kind: 'floor', option: 'portland', pano: 'kitchen_side' }, // S4는 측면에서 진행
   floor_flosso_side: { kind: 'floor', option: 'flosso', pano: 'kitchen_side' },
+};
+
+// 오브제만 잘라 낸 누끼(파노라마 크기가 아닌 PNG)를 배경 위 어디에 세울지(도 단위).
+//  yaw = 가로 중심, bottom = 오브제 바닥이 닿는 pitch, height = 화면에서의 높이. 바꾼 뒤 npm run pano:prep -- --force
+export const CUT_PLACE = {
+  island_b_side: { yaw: 0, bottom: -24.5, height: 15 }, // 측면 주방 통로 가운데(조리대 앞)
 };
 
 export const ISLAND_OPTIONS = ['a', 'b', 'c'];

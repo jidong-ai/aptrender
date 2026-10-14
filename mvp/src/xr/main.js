@@ -15,7 +15,7 @@ import { createAnchors, createSphereLines } from '../shared/overlays.js';
 import { icon, loadUiAssets } from '../shared/ui-assets.js';
 import { wrapYaw } from '../shared/angles.js';
 import { createManagerFrame } from './manager-frame.js';
-import { renderMoodboardCard } from '../shared/moodboard.js';
+import { MOODBOARD_TAGS, renderMoodboardCard } from '../shared/moodboard.js';
 
 const STAGE_W = 1920;
 const STAGE_H = 1080;
@@ -332,7 +332,7 @@ function onState(state) {
   }
 
   $('xrMoodboard').hidden = !(step.xr.moodboard && screen === 'home');
-  if (step.xr.moodboard && stepChanged) renderMoodboardCard($('xrMoodboard'), { title: '내 무드보드', tags: ['#원목', '#다크톤', '#아일랜드식탁'], shared: true });
+  if (step.xr.moodboard && stepChanged) renderMoodboardCard($('xrMoodboard'), { title: '내 무드보드', tags: MOODBOARD_TAGS, shared: true });
   if (stepChanged) {
     chooseTimers.forEach(clearTimeout);
     chooseTimers = [];
