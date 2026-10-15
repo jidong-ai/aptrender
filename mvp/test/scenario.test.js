@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STEPS, STEP, clearsStrokes, createFlow, jumpFlow, nextStep, rewardFor, tabletSceneFor, xrSceneFor } from '../src/shared/scenario.js';
+import { STEPS, STEP, clearsStrokes, createFlow, jumpFlow, nextStep, tabletSceneFor, xrSceneFor } from '../src/shared/scenario.js';
 import { estimate } from '../src/shared/catalog.js';
 import { LAYERS, PANOS, layerIdFor } from '../src/shared/scene.js';
 
@@ -23,8 +23,8 @@ function playThrough() {
 
 test('가이드 대상만 눌러 엔딩까지 가면 리셋으로 끝난다', () => {
   const { flow, visited } = playThrough();
-  assert.equal(visited.length, STEPS.length);
-  assert.equal(flow.step, 'S5-2');
+  assert.equal(visited.length, STEPS.length - 3); // '시작하기'는 프롤로그 3장을 건너뛴다
+  assert.equal(flow.step, 'S5-3');
   assert.deepEqual(flow.choices, { island: 'b', floor: 'portland' }); // 김민선이 XR에서 고른 값
   assert.deepEqual(flow.picks, ['a', 'b', 'c']);
 });
@@ -117,12 +117,25 @@ test('예상 금액 = 항목 합계', () => {
   assert.ok(estimate({ island: 'a' }).total < estimate({ island: 'b' }).total);
 });
 
-test('엔딩 보상: 별 3개 조건과 칭호', () => {
-  const full = rewardFor({ choices: { island: 'b', floor: 'portland' }, stats: { misses: 1 } });
-  assert.equal(full.count, 3);
-  assert.equal(full.title, '베테랑 위브 매니저');
-  const one = rewardFor({ choices: { island: 'a', floor: 'flosso' }, stats: { misses: 5 } });
-  assert.equal(one.count, 1);
+test('시작화면: 시작하기는 매장으로, 튜토리얼보기는 프롤로그로', () => {
+  const flow = createFlow(0);
+  assert.equal(nextStep(flow, { from: 'S0-0', action: 'start', value: 'play' }).flow.step, 'S0-4');
+  assert.equal(nextStep(flow, { from: 'S0-0', action: 'start', value: 'tutorial' }).flow.step, 'S0-1');
+  assert.ok(nextStep(flow, { from: 'S0-0', action: 'start' }).error);
+  assert.equal(nextStep(jumpFlow(flow, 'S0-3', 0), { from: 'S0-3', action: 'prologue-start' }).flow.step, 'S0-4');
+});
+
+test('아웃트로: 리포트 보내기 → 상담 리포트 → 마무리 → 처음으로', () => {
+  let flow = jumpFlow(createFlow(0), 'S5-1', 0);
+  flow = nextStep(flow, { from: 'S5-1', action: 'send-report' }).flow;
+  assert.equal(flow.step, 'S5-2');
+  assert.equal(STEP['S5-2'].tablet.screen, 'report');
+  assert.ok(STEP['S5-2'].xr.report);
+  flow = nextStep(flow, { from: 'S5-2', action: 'caption-next' }).flow;
+  assert.equal(flow.step, 'S5-3');
+  assert.equal(STEP['S5-3'].tablet.screen, 'outro');
+  assert.deepEqual(nextStep(flow, { from: 'S5-3', action: 'restart' }), { reset: true });
+  assert.deepEqual(nextStep(flow, { from: 'S5-3', action: 'auto' }), { reset: true });
 });
 
 test('주석은 체크 단계부터 아일랜드 배치 전까지만 남는다', () => {

@@ -1,5 +1,5 @@
 // 체험에 나오는 제품과 예상 금액. 금액은 모두 전시용 예시 값이다(실제 판매가 아님).
-// photo = 제품 사진(assets/product/, 사용자 업로드). 카탈로그·XR 제품 카드·상담상세에 쓴다
+// photo = 제품 사진(아일랜드: assets/product/ 사용자 업로드, 바닥재: guide/타일옵션 이미지에서 자른 견본). 카탈로그·XR 제품 카드·상담상세에 쓴다
 
 export const ISLANDS = {
   a: { name: '샤인 E0 렌지대 홈바', brand: '플레이너스', color: '화이트', price: 389000, photo: '/assets/product/island-a.jpg' },
@@ -8,8 +8,8 @@ export const ISLANDS = {
 };
 
 export const FLOORS = {
-  portland: { name: '진 그란데 스퀘어 포틀랜드 모티프', brand: '동화자연마루', pricePerM2: 62000, swatch: '#cfc6b8' },
-  flosso: { name: '진 그란데 스퀘어 플로쏘', brand: '동화자연마루', pricePerM2: 58000, swatch: '#d9d4cb' },
+  portland: { name: '진 그란데 스퀘어 포틀랜드 모티프', brand: '동화자연마루', pricePerM2: 62000, swatch: '#cfc6b8', photo: '/assets/ui/figma/floor-portland.jpg' },
+  flosso: { name: '진 그란데 스퀘어 플로쏘', brand: '동화자연마루', pricePerM2: 58000, swatch: '#d9d4cb', photo: '/assets/ui/figma/floor-flosso.jpg' },
 };
 
 // 옵션수정 패널의 색상 칩(Figma 1437:3759). selected = 체험에서 누를 칩

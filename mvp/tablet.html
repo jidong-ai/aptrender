@@ -19,14 +19,13 @@
     <!-- UI: Figma 매니저 프레임(2264×1292) 좌표. 화면 높이에 맞춰 축소하고, 좌우는 화면 폭만큼 늘어난다 -->
     <div class="ui" id="ui">
       <!-- 시작화면 (Figma 1433:3379) -->
+      <!-- 시작화면 (Figma 1254:765). 배경은 Figma에서 글자를 뺀 사진(assets/cover/intro-bg.jpg) -->
       <section class="start" id="start">
-        <img class="start-bg" src="/assets/ui/figma/start-bg.jpg" alt="" />
-        <div class="start-fade"></div>
-        <div class="start-body">
-          <img class="start-logo" src="/assets/ui/figma/weave-logo-full.svg" alt="오늘의집 Weave" />
-          <h1 class="start-title">김민선 씨의 인테리어 상담 도와주기</h1>
-          <button type="button" class="cta-btn" data-target="start">시작하기<img src="/assets/ui/figma/cta-arrow.svg" alt="" /></button>
-        </div>
+        <img class="start-bg" src="/assets/cover/intro-bg.jpg" alt="" />
+        <img class="start-logo" src="/assets/cover/weave-logo-white.svg" alt="오늘의집 Weave" />
+        <p class="start-sub">Weave 매니저가 되어 고객의 반셀프<br />인테리어 상담을 도와주세요</p>
+        <button type="button" class="start-btn is-primary" data-target="start" data-value="play">시작하기<img src="/assets/ui/figma/cta-arrow.svg" alt="" /></button>
+        <button type="button" class="start-btn" data-target="start" data-value="tutorial">튜토리얼보기<img src="/assets/cover/arrow-dark.svg" alt="" /></button>
       </section>
 
       <!-- 프롤로그 3장 (Figma 1433:3453 · 1433:3463 · 1433:3469). 화면을 누르면 다음 장. 본문은 scenario.js의 copy -->
@@ -92,7 +91,21 @@
       <div class="timer" id="timer"></div>
       <nav class="nav" id="nav"></nav>
 
-      <section class="ending" id="ending" hidden></section>
+      <!-- 상담 리포트 (S5-2): 카드는 shared/report.js -->
+      <div class="report-wrap" id="report" hidden><div id="reportCard"></div></div>
+
+      <!-- 마무리 (Figma 1254:793): 흐린 사진 배경 + 별 카드 -->
+      <section class="outro" id="outro" hidden>
+        <img class="outro-bg" src="/assets/cover/outro-bg.jpg" alt="" />
+        <div class="outro-card">
+          <img class="outro-rays" src="/assets/cover/outro-rays.png" alt="" />
+          <img class="outro-star is-l" src="/assets/cover/outro-star-l.png" alt="" />
+          <img class="outro-star is-s" src="/assets/cover/outro-star-s.png" alt="" />
+          <p class="outro-title">상담을 성공적으로 마무리했습니다!</p>
+          <p class="outro-sub">다시 진행을 원하신다면 아래 버튼을 눌러주세요</p>
+          <button type="button" class="outro-btn" data-target="restart">처음 화면으로</button>
+        </div>
+      </section>
     </div>
 
     <!-- 가이드: 눌러야 할 곳만 밝게 + 펄스 링 + 지시문 -->

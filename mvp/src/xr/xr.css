@@ -307,10 +307,9 @@
   }
 }
 
-/* ---------- wire: 대기·부팅·리포트 ---------- */
+/* ---------- wire: 대기·부팅 ---------- */
 .standby,
-.boot,
-.report {
+.boot {
   position: absolute;
   inset: 0;
   display: flex;
@@ -371,52 +370,6 @@
   }
 }
 
-.report {
-  background: rgb(0 20 50 / 0.55);
-}
-
-.report .card {
-  width: 760px;
-  padding: 40px;
-  border-radius: 32px;
-  background: rgb(255 255 255 / 0.3);
-  box-shadow: var(--glass-10);
-  backdrop-filter: blur(40px);
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  animation: rise 0.7s ease both;
-}
-
-.report h2 {
-  margin: 0;
-  font-size: 40px;
-}
-
-.report .row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 24px;
-}
-
-.report .total {
-  font-size: 40px;
-  font-weight: 700;
-}
-
-.report q {
-  font-size: 28px;
-  opacity: 0.9;
-}
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-}
-
 /* 공간 라벨: '매니저' 체크, 치수 */
 .anchor {
   position: absolute;
@@ -441,56 +394,38 @@
   background: var(--blue-400); /* 체크 표시 색(#003270)과 맞춤 */
 }
 
-/* 엔딩: 진행 확정 도장 · 매니저 평가 별점 */
-.report .card {
-  position: relative;
-}
-
-.report .stamp {
+/* 상담 리포트 (S5-2·S5-3): 카드 모양은 shared/report.css. Figma 태블릿 기준 크기를 1920×1080 무대에 맞춰 0.836배 */
+.xr-report {
   position: absolute;
-  right: 36px;
-  top: 30px;
-  padding: 10px 22px;
-  border: 5px solid var(--orange-100);
-  border-radius: 14px;
-  color: var(--orange-100);
-  font-size: 34px;
-  font-weight: 800;
-  transform: rotate(-12deg);
-  animation: stamp 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) 1.1s both;
+  inset: 0;
+  background: rgb(0 20 50 / 0.35);
+  animation: rise-fade 0.5s ease both;
 }
 
-@keyframes stamp {
+.xr-report .rp {
+  position: absolute;
+  left: 50%;
+  top: 96px;
+  transform: translateX(-50%) scale(0.836);
+  transform-origin: 50% 0;
+  animation: xr-report-in 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes xr-report-in {
   from {
     opacity: 0;
-    transform: rotate(-12deg) scale(2.4);
+    translate: 0 60px;
   }
 }
 
-.report .rate {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 22px;
-}
-
-.report .stars span {
-  display: inline-block;
-  font-size: 44px;
-  color: rgb(255 255 255 / 0.25);
-  animation: r-star-xr 0.5s cubic-bezier(0.2, 1.8, 0.4, 1) both;
-}
-
-.report .stars span.on {
-  color: #ffc93c;
-  text-shadow: 0 0 18px rgb(255 201 60 / 0.6);
-}
-
-@keyframes r-star-xr {
+@keyframes rise-fade {
   from {
     opacity: 0;
-    transform: scale(0.2);
   }
+}
+
+.subtitle.is-low {
+  bottom: 80px;
 }
 
 /* ---------- 김민선 무드보드 (S2-1, Figma 1181:159): 카드 모양은 shared/moodboard.css ----------

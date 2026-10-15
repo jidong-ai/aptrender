@@ -1,6 +1,7 @@
 import 'pretendard/dist/web/variable/pretendardvariable.css';
 import '../shared/base.css';
 import '../shared/moodboard.css';
+import '../shared/report.css';
 import './xr.css';
 import { createSync } from '../shared/sync.js';
 import { mountHud } from '../shared/hud.js';
@@ -8,14 +9,14 @@ import { PanoViewer } from '../shared/pano-viewer.js';
 import { attachLookControls } from '../shared/look-controls.js';
 import { PART_TEXT, createScenePlayer } from '../shared/pano-set.js';
 import { ANCHORS, FLOOR_OPTIONS, PANOS } from '../shared/scene.js';
-import { SPEAKERS, STEP, STEPS, rewardFor, stepIndex, tabletSceneFor, xrSceneFor } from '../shared/scenario.js';
-import { confetti } from '../shared/celebrate.js';
+import { SPEAKERS, STEP, STEPS, stepIndex, tabletSceneFor, xrSceneFor } from '../shared/scenario.js';
 import { FLOORS, ISLANDS, estimate, won } from '../shared/catalog.js';
 import { createAnchors, createSphereLines } from '../shared/overlays.js';
 import { icon, loadUiAssets } from '../shared/ui-assets.js';
 import { wrapYaw } from '../shared/angles.js';
 import { createManagerFrame } from './manager-frame.js';
 import { MOODBOARD_TAGS, renderMoodboardCard } from '../shared/moodboard.js';
+import { renderReportCard } from '../shared/report.js';
 
 const STAGE_W = 1920;
 const STAGE_H = 1080;
@@ -159,36 +160,6 @@ function renderPrice(choices) {
   box.append(el('small', '', '예상 금액'), t, el('div', 'note', '전시용 예시 금액'));
 }
 
-// 엔딩(고객 시점): 리포트 도착 → '진행 확정' 도장 → 매니저 평가 별점 → 색종이
-function renderReport(flow) {
-  const { choices } = flow;
-  const { total } = estimate(choices);
-  const reward = rewardFor(flow);
-  const card = el('div', 'card');
-  const stamp = el('div', 'stamp', '진행 확정');
-  const stars = el('div', 'stars');
-  reward.stars.forEach((s, i) => {
-    const st = el('span', s.ok ? 'on' : '', '★');
-    st.style.animationDelay = `${1.6 + i * 0.35}s`;
-    stars.append(st);
-  });
-  card.append(stamp, el('small', '', '오늘의집 위브'), el('h2', '', '상담 리포트가 도착했어요'));
-  for (const [label, name] of [
-    ['아일랜드', choices.island ? ISLANDS[choices.island].name : '-'],
-    ['바닥재', choices.floor ? FLOORS[choices.floor].name : '-'],
-  ]) {
-    const row = el('div', 'row');
-    row.append(el('span', '', label), el('b', '', name));
-    card.append(row);
-  }
-  const rate = el('div', 'rate');
-  rate.append(el('small', '', '매니저 상담 평가'), stars);
-  card.append(el('div', 'total', `예상 ${won(total)}`), rate, el('q', '', '이대로 진행하고 싶어요'));
-  $('report').textContent = '';
-  $('report').append(card);
-  setTimeout(() => confetti($('report'), { origin: { x: 0.5, y: 0.3 } }), 1200);
-}
-
 // ---------- 제품 카드: 매니저가 제안 → 김민선이 고른다 ----------
 const FIG = '/assets/ui/figma';
 const OFFER = {
@@ -323,8 +294,9 @@ function onState(state) {
 
   // 자막: 김민선의 말(caption)과 관람객이 맡은 매니저의 말(say). 가이드 UI 문구는 태블릿에만
   const said = step.caption?.speaker === 'customer' ? step.caption : step.say ? { speaker: 'manager', text: step.say } : null;
-  const cap = screen === 'home' ? said : null;
+  const cap = screen === 'home' || screen === 'ending' ? said : null;
   $('subtitle').hidden = !cap;
+  $('subtitle').classList.toggle('is-low', screen === 'ending'); // 리포트 카드 아래로
   if (cap) {
     $('subtitle').dataset.speaker = cap.speaker;
     $('subSpeaker').textContent = SPEAKERS[cap.speaker];
@@ -341,8 +313,9 @@ function onState(state) {
 
   if (screen === 'home') renderPrice(flow.choices);
   else $('price').hidden = true;
+  // 상담 리포트: 매니저가 보낸 순간(S5-2) 한 번 그리고, 마무리(S5-3) 동안 그대로 둔다
+  if (step.xr.report && $('report').hidden) renderReportCard($('reportCard'), { choices: flow.choices, consultMs: flow.timerAt ? Math.max(0, flow.enteredAt - flow.timerAt) : 0, side: 'customer' });
   $('report').hidden = !step.xr.report;
-  if (step.xr.report && stepChanged) renderReport(flow);
 
   const want = xrSceneFor(flow);
   if (want.pano !== shownPano && shownPano && want.pano) onSpaceChange(want, shownPano);

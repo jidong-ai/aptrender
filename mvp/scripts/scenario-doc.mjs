@@ -3,10 +3,10 @@ import fs from 'node:fs';
 import { SPEAKERS, STEPS } from '../src/shared/scenario.js';
 
 const TARGET = {
-  start: "CTA '시작하기'",
+  start: "'시작하기' → 매장 / '튜토리얼보기' → 프롤로그",
   'prologue-next': '화면 아무 곳이나 탭',
   'prologue-start': "CTA '상담 플로우 시작하기'",
-  restart: "CTA '다시 체험하기'",
+  restart: "'처음 화면으로'",
   'caption-next': '캡션 다음',
   hotspot: '바닥 화살표',
   trace: '점선 체크 따라 그리기',
@@ -27,17 +27,18 @@ const TARGET = {
   'send-report': '상담 리포트 보내기',
 };
 const PANEL = { loading: '로딩 카드', ohouse: '오늘의집 카드', catalog: '카탈로그', detail: '상담상세', options: '옵션수정', summary: '상담 요약' };
-const XR = { standby: '대기 화면', boot: '부팅', ending: '리포트 카드 + 엔딩', home: '상담홈' };
+const XR = { standby: '대기 화면', boot: '부팅', ending: '상담 리포트 카드', home: '상담홈' };
 
 const esc = (t) => t.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
 const rows = STEPS.map((s) => {
   const t = s.tablet;
   const extras = [t.moodboard && '무드보드', t.area === 'blink' && '바닥면 깜박임', t.area === 'on' && '바닥 선택 영역', t.waiting && '대기'].filter(Boolean);
   const tablet =
-    t.screen === 'start' ? '시작화면(Figma 1433:3379)' : t.screen === 'prologue' ? `프롤로그 ${t.page}장(Figma ${['1433:3453', '1433:3463', '1433:3469'][t.page - 1]})` : t.screen === 'ending' ? '엔딩' : `${t.pano}${t.panel ? ` + ${PANEL[t.panel]}${t.expand ? '(후보 펼침)' : ''}` : ''}${t.annotate ? ' + 주석 도구' : ''}${extras.map((x) => ` + ${x}`).join('')}`;
+    t.screen === 'start' ? '시작화면(Figma 1254:765)' : t.screen === 'prologue' ? `프롤로그 ${t.page}장(Figma ${['1433:3453', '1433:3463', '1433:3469'][t.page - 1]})` : t.screen === 'report' ? `${t.pano} + 상담 리포트` : t.screen === 'outro' ? '마무리(Figma 1254:793)' : `${t.pano}${t.panel ? ` + ${PANEL[t.panel]}${t.expand ? '(후보 펼침)' : ''}` : ''}${t.annotate ? ' + 주석 도구' : ''}${extras.map((x) => ` + ${x}`).join('')}`;
   const caption = s.caption ? `${SPEAKERS[s.caption.speaker]}: ${esc(s.caption.text)}` : s.copy ? `(본문) ${esc(s.copy)}` : '—';
   const guide = s.guide ? esc(s.guide) : '—';
-  let next = s.auto ? `자동 ${s.auto / 1000}초${s.next === 'reset' ? ' → 처음으로' : ''}` : `${TARGET[s.target] ?? s.target}${s.look ? ' (60° 둘러보기 또는 6초 뒤 열림)' : ''}${s.collect ? ` ${s.values.length}개 모두` : ''}`;
+  const auto = s.auto ? `자동 ${s.auto / 1000}초${s.next === 'reset' ? ' → 처음으로' : ''}` : '';
+  let next = !s.target ? auto : `${TARGET[s.target] ?? s.target}${s.look ? ' (60° 둘러보기 또는 6초 뒤 열림)' : ''}${s.collect ? ` ${s.values.length}개 모두` : ''}${auto ? ` (${auto})` : ''}`;
   if (s.set) {
     const fixed = s.values?.length === 1 || !s.values;
     const sample = s.set(fixed ? s.values?.[0] : '선택값');

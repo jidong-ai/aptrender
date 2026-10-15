@@ -14,12 +14,13 @@
 //  quiet    가이드 표시 없이 대상만 누를 수 있게(시작화면처럼 버튼이 이미 눈에 띌 때)
 //  cta      대상이 'CTA button' 컴포넌트(이미 색으로 강조됨) → 하이라이트하지 않는다
 //  back     프롤로그 '<' 버튼으로 돌아갈 단계
+//  next     다음 단계 id(생략하면 바로 다음). 'reset'이면 처음으로. 값마다 갈 곳이 다르면 { 값: id }
 //  copy     프롤로그 본문(캡션 말풍선 없이 화면 가운데 큰 글씨)
 //  dim      대상 외 화면을 어둡게 할지. 생략하면 작은 메뉴 버튼(tool:·nav:·category:)만 어둡게 한다
 //  clearStrokes  다음 단계로 넘어갈 때 주석을 지운다
-//  tablet   태블릿 화면: screen('start'|'pano'|'ending'), pano, panel(가운데 카드), annotate, dims
+//  tablet   태블릿 화면: screen('start'|'prologue'|'pano'|'report'|'outro'), pano, panel(가운데 카드), annotate, dims
 //  xr       XR 화면: screen('standby'|'boot'|'home'|'ending'), pano(기본 kitchen_front), moodboard, offer('island'|'floor' 제품 카드),
-//           choose(카드 중 김민선이 고르는 값, 고르는 장면 재생), report
+//           choose(카드 중 김민선이 고르는 값, 고르는 장면 재생), report(상담 리포트 카드)
 
 import { FLOOR_OPTIONS, ISLAND_OPTIONS } from './scene.js';
 
@@ -27,11 +28,14 @@ import { FLOOR_OPTIONS, ISLAND_OPTIONS } from './scene.js';
 export const SPEAKERS = { guide: '매니저', manager: '매니저', customer: '김민선' };
 
 export const STEPS = [
-  // ---------- 0 시작화면 · 프롤로그 (Figma 1434:3696) ----------
+  // ---------- 0 시작화면 (Figma 1254:765) · 프롤로그 (Figma 1434:3696) ----------
+  // '시작하기'는 매장으로 바로, '튜토리얼보기'는 프롤로그 3장을 거쳐 매장으로
   {
     id: 'S0-0',
     chapter: 'opening',
     target: 'start',
+    values: ['play', 'tutorial'],
+    next: { play: 'S0-4', tutorial: 'S0-1' },
     hint: '시작하기',
     cta: true,
     tablet: { screen: 'start' },
@@ -276,7 +280,7 @@ export const STEPS = [
     tablet: { pano: 'kitchen_side' },
     xr: { screen: 'home', pano: 'kitchen_side' },
   },
-  // ---------- 5 아웃트로 ----------
+  // ---------- 5 아웃트로: 상담 리포트 → 마무리(Figma 1254:793) ----------
   {
     id: 'S5-1',
     chapter: 'outro',
@@ -290,13 +294,21 @@ export const STEPS = [
   {
     id: 'S5-2',
     chapter: 'outro',
-    caption: { speaker: 'customer', text: '이대로 진행하고 싶어요' },
+    caption: { speaker: 'customer', text: '리포트 잘 받았어요. 이대로 진행하고 싶어요' },
+    target: 'caption-next',
+    hint: '다음',
+    tablet: { screen: 'report', pano: 'kitchen_side' }, // 최종 견적·선택 제품
+    xr: { screen: 'ending', pano: 'kitchen_side', report: true },
+  },
+  {
+    id: 'S5-3',
+    chapter: 'outro',
     target: 'restart',
     cta: true,
-    hint: '다시 체험하기',
+    hint: '처음 화면으로',
     auto: 25000,
     next: 'reset',
-    tablet: { screen: 'ending', pano: 'kitchen_side' },
+    tablet: { screen: 'outro', pano: 'kitchen_side' },
     xr: { screen: 'ending', pano: 'kitchen_side', report: true },
   },
 ];
@@ -319,21 +331,6 @@ export const coachQuiet = (step) => Boolean(step.quiet || step.cta || step.targe
 export const coachDim = (step) => step.dim ?? /^(tool|nav|category):/.test(step.target ?? '');
 
 export const STAT_KEYS = ['misses', 'traceTries'];
-
-/**
- * 엔딩 보상: 별 3개와 칭호.
- *  ★1 상담 완주 · ★2 고객 취향 반영(마호가니 아떼 선택) · ★3 막힘 없이 진행(헛탭 2번 이하)
- */
-export function rewardFor(flow) {
-  const stars = [
-    { key: 'done', label: '상담 완주', ok: true },
-    { key: 'taste', label: '고객 취향 반영', ok: flow.choices.island === 'b' },
-    { key: 'smooth', label: '막힘 없이 진행', ok: (flow.stats?.misses ?? 0) <= 2 },
-  ];
-  const count = stars.filter((s) => s.ok).length;
-  const title = ['', '신입 위브 매니저', '센스 있는 위브 매니저', '베테랑 위브 매니저'][count];
-  return { stars, count, title };
-}
 
 function enter(flow, id, choices, now) {
   const step = STEP[id];
@@ -373,7 +370,7 @@ export function nextStep(flow, msg, now = Date.now()) {
     }
   }
   const choices = { ...flow.choices, ...(step.set?.(msg.value) ?? {}) };
-  const nextId = step.next ?? STEPS[step.index + 1]?.id;
+  const nextId = (typeof step.next === 'object' ? step.next[msg.value] : step.next) ?? STEPS[step.index + 1]?.id;
   if (!nextId || nextId === 'reset') return { reset: true };
   return { flow: enter(flow, nextId, choices, now) };
 }

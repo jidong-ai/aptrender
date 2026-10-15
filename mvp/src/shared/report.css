@@ -1,0 +1,226 @@
+/* 상담 리포트 카드 (S5-2). 크기는 Figma 태블릿 프레임(2264×1292) 기준 px. 위치는 각 화면 CSS(.report-wrap / .xr-report)에서 */
+.rp {
+  box-sizing: border-box;
+  width: 1180px;
+  padding: 44px 52px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  border-radius: 40px;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.78), rgb(232 242 249 / 0.72) 55%, rgb(255 255 255 / 0.78));
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  box-shadow: 0 24px 60px rgb(0 20 50 / 0.18);
+  color: #1f1f1f;
+  font-family: var(--font);
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  text-align: left;
+  word-break: keep-all;
+}
+
+.rp-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.rp-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rp-titles small {
+  font-size: 22px;
+  font-weight: 600;
+  color: #205ba5;
+}
+
+.rp-titles h2 {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 700;
+}
+
+.rp-meta {
+  font-size: 22px;
+  color: #6b6b6b;
+}
+
+.rp-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: rgb(32 91 165 / 0.1);
+  color: #205ba5;
+  font-size: 22px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: rp-chip 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) 0.5s both;
+}
+
+.rp-chip img {
+  width: 24px;
+  height: 24px;
+}
+
+@keyframes rp-chip {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.rp-body {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 40px;
+}
+
+.rp-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.rp-col h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #3f3f3f;
+}
+
+.rp-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  border-radius: 24px;
+  background: rgb(255 255 255 / 0.7);
+  animation: rp-rise 0.45s ease both;
+}
+
+.rp-item:nth-of-type(2) {
+  animation-delay: 0.12s;
+}
+
+.rp-item-pic {
+  flex: none;
+  width: 150px;
+  height: 120px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e9e5df;
+}
+
+.rp-item-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rp-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rp-item-text small {
+  font-size: 20px;
+  font-weight: 600;
+  color: #205ba5;
+}
+
+.rp-item-text b {
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.rp-item-text span {
+  font-size: 19px;
+  color: #6b6b6b;
+}
+
+.rp-item em {
+  flex: none;
+  align-self: flex-end;
+  font-style: normal;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.rp-bill {
+  padding: 4px 0 0;
+}
+
+.rp-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 28px;
+  border-radius: 24px;
+  background: rgb(255 255 255 / 0.5);
+}
+
+.rp-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 23px;
+  color: #3f3f3f;
+}
+
+.rp-line small {
+  margin-left: 8px;
+  font-size: 18px;
+  color: #8a8a8a;
+}
+
+.rp-line b {
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.rp-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 4px 0;
+  border-top: 2px solid rgb(32 91 165 / 0.25);
+  padding-top: 20px;
+}
+
+.rp-total span {
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.rp-total-num {
+  font-size: 56px;
+  font-weight: 800;
+  color: #205ba5;
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-note {
+  margin: 0;
+  font-size: 18px;
+  color: #8a8a8a;
+  text-align: right;
+}
+
+@keyframes rp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}

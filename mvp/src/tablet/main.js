@@ -1,6 +1,7 @@
 import 'pretendard/dist/web/variable/pretendardvariable.css';
 import '../shared/base.css';
 import '../shared/moodboard.css';
+import '../shared/report.css';
 import './tablet.css';
 import { createSync } from '../shared/sync.js';
 import { mountHud } from '../shared/hud.js';
@@ -14,8 +15,9 @@ import { icon, loadUiAssets } from '../shared/ui-assets.js';
 import { wrapYaw } from '../shared/angles.js';
 import { createCoach } from './coach.js';
 import { coverage, createAnnotator } from './annotate.js';
-import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, mmss, renderEnding, renderOptionEditor, renderPanel } from './ui.js';
+import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, mmss, renderOptionEditor, renderPanel } from './ui.js';
 import { MOODBOARD_TAGS, renderMoodboardCard } from '../shared/moodboard.js';
+import { renderReportCard } from '../shared/report.js';
 
 const VIEW_SEND_MS = 100; // managerView 10Hz
 const FRAME_H = 1292; // Figma 매니저 프레임 높이
@@ -280,6 +282,7 @@ const lookDone = () => lookAcc >= LOOK_DEG || performance.now() - stepEnteredLoc
 let lastStep = null;
 let lastPanelKey = '';
 let lastPano = null;
+let reportLeave = 0;
 
 function render(state) {
   const { flow } = state;
@@ -308,11 +311,26 @@ function render(state) {
     else delete $('proFrame').dataset.target;
     $('proCta').hidden = step.target !== 'prologue-start';
   }
-  $('ending').hidden = screen !== 'ending';
-  if (screen === 'ending' && stepChanged) renderEnding($('ending'), flow);
+  // 상담 리포트(S5-2) → 마무리(S5-3): 리포트가 위로 접히며 사라지는 동안 마무리 화면이 겹쳐 들어온다
+  const reportEl = $('report');
+  if (screen === 'report') {
+    clearTimeout(reportLeave);
+    reportEl.classList.remove('is-leaving');
+    if (stepChanged || reportEl.hidden) renderReportCard($('reportCard'), { choices: flow.choices, consultMs: flow.timerAt ? Math.max(0, flow.enteredAt - flow.timerAt) : 0 });
+    reportEl.hidden = false;
+  } else if (screen === 'outro' && stepChanged && !reportEl.hidden) {
+    reportEl.classList.add('is-leaving');
+    reportLeave = setTimeout(() => {
+      reportEl.hidden = true;
+      reportEl.classList.remove('is-leaving');
+    }, 600);
+  } else if (!reportEl.classList.contains('is-leaving')) {
+    reportEl.hidden = true;
+  }
+  $('outro').hidden = screen !== 'outro';
 
   // 캡션
-  const cap = step.caption && screen !== 'ending' && screen !== 'start' ? step.caption : null;
+  const cap = step.caption && (screen === 'pano' || screen === 'report') ? step.caption : null;
   $('caption').hidden = !cap || t.panel === 'loading';
   if (cap) renderCaption(cap, step, flow, stepChanged);
 
