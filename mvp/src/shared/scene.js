@@ -28,7 +28,7 @@ export const LAYERS = {
 // 오브제만 잘라 낸 누끼(파노라마 크기가 아닌 PNG)를 배경 위 어디에 세울지(도 단위).
 //  yaw = 가로 중심, bottom = 오브제 바닥이 닿는 pitch, height = 화면에서의 높이. 바꾼 뒤 npm run pano:prep -- --force
 export const CUT_PLACE = {
-  island_b_side: { yaw: 0, bottom: -24.5, height: 15 }, // 측면 주방 통로 가운데(조리대 앞)
+  island_b_side: { yaw: 0, bottom: -24.5, height: 30 }, // 측면 주방 통로 가운데(조리대 앞). 10/15 사용자 확인: 크기 2배
 };
 
 export const ISLAND_OPTIONS = ['a', 'b', 'c'];
