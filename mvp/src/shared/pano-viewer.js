@@ -8,12 +8,17 @@ const easeOut = (t) => 1 - (1 - t) ** 3;
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
 
 export const LAYER_SLOTS = ['floor', 'island']; // 아래에서 위 순서로 겹친다(바닥재 누끼는 아일랜드 없이 렌더)
-const DROP = 1.2 / 180; // 배치 연출: 오브제가 1.2°만큼 위에서 내려앉는다(구 uv 단위)
-const EFFECT_MS = { place: 1100, paint: 1300, remove: 450, swap: 350 };
+const DROP = 3 / 180; // 배치 연출: 빛나는 윤곽이 3°만큼 위에서 내려앉는다(구 uv 단위)
+const EFFECT_MS = { place: 2000, paint: 1300, remove: 450, swap: 350 };
+// 레이어 연출 값의 기본(연출 없음) 상태
+const REST = { opacity: 1, reveal: 2, glow: 0, drop: 0, rise: 2, ghost: 0, band: 0, anim: null };
 
 // 오려낸 레이어용 셰이더: 잘라낸 사각형(crop)만 구 위 제자리에 붙이고, 연출용 값을 받는다
 //  - reveal: 구 아래(발밑)부터 이 높이(uv.y)까지만 보인다 → 바닥재가 발밑에서 퍼지는 연출
-//  - glow:   흰빛을 섞는다 → 놓일 자리가 반투명하게 빛나는 연출
+//  - glow:   흰빛을 섞는다
+//  - rise:   오브제 아래(0)부터 이 높이(1 = 맨 위)까지만 실제 색으로 채운다 → 아일랜드가 바닥부터 생겨나는 연출
+//  - ghost:  아직 안 채워진 부분을 빛나는 반투명 윤곽으로 보여 줄 세기
+//  - band:   채워지는 경계선의 빛 세기
 const LAYER_VERT = /* glsl */ `
 varying vec2 vUv;
 void main() {
@@ -26,14 +31,22 @@ uniform mat3 crop;
 uniform float opacity;
 uniform float reveal;
 uniform float glow;
+uniform float rise;
+uniform float ghost;
+uniform float band;
 varying vec2 vUv;
 void main() {
   vec2 t = (crop * vec3(vUv, 1.0)).xy;
   if (t.x < 0.0 || t.x > 1.0 || t.y < 0.0 || t.y > 1.0) discard;
   vec4 c = texture2D(map, t);
   float shown = 1.0 - smoothstep(reveal - 0.06, reveal, vUv.y);
-  c.rgb = mix(c.rgb, vec3(1.0), glow);
-  gl_FragColor = vec4(c.rgb, c.a * opacity * shown);
+  float filled = 1.0 - smoothstep(rise - 0.012, rise, t.y);
+  float edge = band * filled * (1.0 - smoothstep(0.0, 0.07, rise - t.y));
+  vec3 col = mix(c.rgb, vec3(1.0), glow);
+  col = mix(col, vec3(0.82, 0.94, 1.0), edge * 0.9);
+  col = mix(vec3(0.68, 0.85, 1.0), col, filled); // 아직 안 채워진 윤곽: 흰 벽 위에서도 보이게 옅은 하늘색
+  float a = c.a * (filled + (1.0 - filled) * ghost);
+  gl_FragColor = vec4(col, a * opacity * shown);
   #include <colorspace_fragment>
 }`;
 
@@ -111,6 +124,9 @@ export class PanoViewer {
           opacity: { value: 1 },
           reveal: { value: 2 },
           glow: { value: 0 },
+          rise: { value: 2 },
+          ghost: { value: 0 },
+          band: { value: 0 },
         },
         vertexShader: LAYER_VERT,
         fragmentShader: LAYER_FRAG,
@@ -118,7 +134,7 @@ export class PanoViewer {
         depthTest: false,
         depthWrite: false,
       });
-      layers[slot] = { mesh: this.makeMesh(material), layer: null, opacity: 1, reveal: 2, glow: 0, drop: 0, anim: null };
+      layers[slot] = { mesh: this.makeMesh(material), layer: null, ...REST };
     }
     return { base, layers, alpha: 0 };
   }
@@ -239,7 +255,7 @@ export class PanoViewer {
     stack.base.material.map = scene.base ?? null;
     stack.base.material.needsUpdate = true;
     for (const slot of LAYER_SLOTS) {
-      Object.assign(stack.layers[slot], { opacity: 1, reveal: 2, glow: 0, drop: 0, anim: null });
+      Object.assign(stack.layers[slot], REST);
       this.assignLayer(stack.layers[slot], scene[slot] ?? null);
     }
   }
@@ -271,10 +287,10 @@ export class PanoViewer {
     if (L.layer === layer && !L.anim) return;
     this.assignLayer(L, layer);
     if (effect === 'none') {
-      Object.assign(L, { opacity: 1, reveal: 2, glow: 0, drop: 0, anim: null });
+      Object.assign(L, REST);
       return;
     }
-    Object.assign(L, { opacity: 0, reveal: effect === 'paint' ? 0 : 2, glow: 0, drop: 0 });
+    Object.assign(L, { ...REST, opacity: 0, reveal: effect === 'paint' ? 0 : 2, rise: effect === 'place' ? 0 : 2 });
     L.anim = { kind: effect, start: performance.now() + delay };
   }
 
@@ -301,12 +317,15 @@ export class PanoViewer {
     const t = clamp01((now - a.start) / EFFECT_MS[a.kind]);
     if (now < a.start) return;
     if (a.kind === 'place') {
-      // 0~35%: 놓일 자리가 반투명하게 빛남 → 30~100%: 실제 오브제로 채워지며 내려앉음
-      const p1 = easeOut(clamp01(t / 0.35));
-      const p2 = ease(clamp01((t - 0.3) / 0.7));
-      L.opacity = Math.max(0.5 * p1, p2);
-      L.glow = 0.75 * (1 - p2);
-      L.drop = DROP * (1 - easeOut(clamp01((t - 0.3) / 0.7)));
+      // 없던 오브제가 새로 생기는 연출
+      //  0~35%: 빛나는 반투명 윤곽이 위에서 내려와 자리에 앉는다
+      //  30~88%: 바닥부터 위로 실제 오브제가 채워진다(경계선이 빛남) → 끝: 빛이 걷힌다
+      L.opacity = 1;
+      L.ghost = 0.72 * easeOut(clamp01(t / 0.2)) * (1 - clamp01((t - 0.85) / 0.15));
+      L.drop = DROP * (1 - easeOut(clamp01(t / 0.35)));
+      L.rise = t < 0.3 ? 0 : -0.02 + ease(clamp01((t - 0.3) / 0.58)) * 1.06;
+      L.band = clamp01((t - 0.3) / 0.06) * (1 - clamp01((t - 0.84) / 0.12));
+      L.glow = 0.12 * (1 - clamp01((t - 0.55) / 0.3));
     } else if (a.kind === 'paint') {
       // 발밑(구 아래쪽)에서 수평선까지 새 바닥재가 번져 나간다
       L.opacity = 1;
@@ -319,7 +338,7 @@ export class PanoViewer {
     }
     if (t >= 1) {
       if (a.kind === 'remove') this.assignLayer(L, null);
-      Object.assign(L, { opacity: 1, reveal: 2, glow: 0, drop: 0, anim: null });
+      Object.assign(L, REST);
     }
   }
 
@@ -338,6 +357,9 @@ export class PanoViewer {
       u.opacity.value = opacity;
       u.reveal.value = L.reveal;
       u.glow.value = L.glow;
+      u.rise.value = L.rise;
+      u.ghost.value = L.ghost;
+      u.band.value = L.band;
       // vUv(구 전체 0~1) → 잘라낸 이미지 좌표. 텍스처는 위쪽이 uv.y=1
       const [x0, y0, x1, y1] = L.layer.rect;
       const sx = 1 / (x1 - x0);

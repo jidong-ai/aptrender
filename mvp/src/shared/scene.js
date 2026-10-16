@@ -26,10 +26,24 @@ export const LAYERS = {
 };
 
 // 오브제만 잘라 낸 누끼(파노라마 크기가 아닌 PNG)를 배경 위 어디에 세울지(도 단위).
-//  yaw = 가로 중심, bottom = 오브제 바닥이 닿는 pitch, height = 화면에서의 높이. 바꾼 뒤 npm run pano:prep -- --force
+//  yaw = 가로 중심, bottom = 누끼 아랫변이 닿는 pitch, height = 화면에서의 높이.
+//  서버가 켜질 때 이 값으로 자리를 다시 계산하므로 숫자만 바꾸고 서버를 다시 켜면 된다(pano:prep 없이도)
 export const CUT_PLACE = {
-  island_b_side: { yaw: 6.7, bottom: -32.9, height: 27 }, // 측면 주방 통로(조리대 앞). 10/15 사용자 지정: 앞판 아랫변을 표시한 바닥선에 맞추고 2배 크기에서 10% 축소
+  // 측면 주방 통로(조리대 앞). 10/15 사용자 지정: 앞판 아랫변을 표시한 바닥선에 맞춤. 10/16 크기 190%(처음 15° 기준)
+  island_b_side: { yaw: 6.7, bottom: -32.9, height: 28.5 },
+  // 정면: island_b_front.jpg에서 아일랜드만 오린 누끼. 그 렌더는 카메라가 kitchen_front보다 뒤에 있어서
+  // 두 렌더의 뒷벽 바닥선(pitch -14.6° → -16.6°)으로 카메라 이동을 재고, 같은 바닥 위치·크기로 옮겼다(1.3배)
+  island_b_front: { yaw: -5.2, bottom: -32.5, height: 23 },
 };
+
+/** CUT_PLACE 자리 + 누끼 가로세로비 → 파노라마 uv 사각형 [x0, y0, x1, y1] */
+export function placedRect({ yaw, bottom, height }, aspect) {
+  const hFrac = height / 180; // 세로 비율(0~1)
+  const wFrac = (hFrac * aspect) / 2; // 가로 비율: 파노라마는 가로가 세로의 2배
+  const cx = 0.5 + yaw / 360;
+  const by = 0.5 - bottom / 180;
+  return [cx - wFrac / 2, by - hFrac, cx + wFrac / 2, by].map((v) => Math.round(v * 1e5) / 1e5);
+}
 
 export const ISLAND_OPTIONS = ['a', 'b', 'c'];
 export const FLOOR_OPTIONS = ['portland', 'flosso'];
@@ -72,7 +86,7 @@ export const ANCHORS = {
   store_3: { hotspot: { yaw: -7, pitch: -20, to: 'counsel', label: '상담실로' } },
   counsel: {},
   kitchen_front: {
-    island: { yaw: 0, pitch: -16 },
+    island: { yaw: -5, pitch: -20 }, // 아일랜드 누끼(CUT_PLACE.island_b_front) 가운데. 배치 연출 때 시선이 여기로
     floor: { yaw: 0, pitch: -42 },
     // 싱크대 앞 → 900mm 떨어진 아일랜드 자리
     dimension: { from: { yaw: -18, pitch: -28 }, to: { yaw: 2, pitch: -28 }, label: '900mm' },
@@ -84,7 +98,7 @@ export const ANCHORS = {
     ],
   },
   kitchen_side: {
-    island: { yaw: 0, pitch: -16 },
+    island: { yaw: 6.7, pitch: -19 }, // 아일랜드 누끼(CUT_PLACE.island_b_side) 가운데
     floor: { yaw: 0, pitch: -30 }, // 옵션수정에서 누르는 바닥면(임시 영역 FLOOR_AREA.kitchen_side의 가운데쯤)
   },
 };

@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import WebSocket from 'ws';
 import { listLayers, listPanos, startServer } from '../server/app.js';
+import { CUT_PLACE, placedRect } from '../src/shared/scene.js';
 
 let server;
 before(async () => {
@@ -201,14 +202,22 @@ test('파노라마 목록: 원본·built 폴더를 이름 규칙·별칭으로 �
 test('레이어 목록: manifest에 있고 파일이 실제로 있는 것만', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pano-'));
   fs.mkdirSync(path.join(dir, 'built', 'layers'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'built', 'layers', 'floor_flosso_side_4k.webp'), '');
   fs.writeFileSync(path.join(dir, 'built', 'layers', 'island_b_side_4k.webp'), '');
   fs.writeFileSync(
     path.join(dir, 'built', 'layers', 'manifest.json'),
-    JSON.stringify({ layers: { island_b_side: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': 'built/layers/island_b_side_4k.webp', '8k': 'built/layers/island_b_side_8k.webp' } } } }),
+    JSON.stringify({
+      layers: {
+        floor_flosso_side: { kind: 'floor', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': 'built/layers/floor_flosso_side_4k.webp', '8k': 'built/layers/floor_flosso_side_8k.webp' } },
+        // pano:prep을 다시 안 돌린 예전 manifest(작은 크기·aspect 없음)
+        island_b_side: { kind: 'island', rect: [0.4, 0.5, 0.45, 0.6], files: { '4k': 'built/layers/island_b_side_4k.webp' } },
+      },
+    }),
   );
-  assert.deepEqual(listLayers(dir), {
-    island_b_side: { kind: 'island', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': '/assets/pano/built/layers/island_b_side_4k.webp' } },
-  });
+  const layers = listLayers(dir);
+  assert.deepEqual(layers.floor_flosso_side, { kind: 'floor', rect: [0.4, 0.5, 0.6, 0.8], files: { '4k': '/assets/pano/built/layers/floor_flosso_side_4k.webp' } });
+  // 자리를 지정한 누끼는 지금의 CUT_PLACE로 다시 계산(가로세로비 1:1은 예전 사각형에서)
+  assert.deepEqual(layers.island_b_side.rect, placedRect(CUT_PLACE.island_b_side, 1));
   assert.deepEqual(listLayers(path.join(dir, 'nope')), {});
   fs.rmSync(dir, { recursive: true });
 });

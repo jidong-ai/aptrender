@@ -12,7 +12,7 @@ import {
   sanitizePts,
   sanitizeStroke,
 } from '../src/shared/protocol.js';
-import { parsePanoFile } from '../src/shared/scene.js';
+import { CUT_PLACE, parsePanoFile, placedRect } from '../src/shared/scene.js';
 import { STAT_KEYS, STEP, clearsStrokes, jumpFlow, nextStep } from '../src/shared/scenario.js';
 import { getLanAddresses } from './lan.js';
 
@@ -58,7 +58,11 @@ export function listLayers(dir = PANO_DIR) {
     for (const [size, rel] of Object.entries(layer.files ?? {})) {
       if (fs.existsSync(path.join(dir, rel))) files[size] = `/assets/pano/${rel.split('/').map(encodeURIComponent).join('/')}`;
     }
-    if (Object.keys(files).length) layers[key] = { kind: layer.kind, rect: layer.rect, files };
+    // 자리를 지정한 누끼는 지금의 CUT_PLACE로 다시 계산한다(값만 바꾸고 pano:prep을 안 돌려도 반영되게).
+    // 예전 manifest에 aspect가 없으면 만들 때의 사각형에서 가로세로비를 거꾸로 구한다
+    let rect = layer.rect;
+    if (CUT_PLACE[key] && rect) rect = placedRect(CUT_PLACE[key], layer.aspect ?? (2 * (rect[2] - rect[0])) / (rect[3] - rect[1]));
+    if (Object.keys(files).length) layers[key] = { kind: layer.kind, rect, files };
   }
   return layers;
 }

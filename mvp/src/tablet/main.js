@@ -283,6 +283,7 @@ let lastStep = null;
 let lastPanelKey = '';
 let lastPano = null;
 let reportLeave = 0;
+let lastIsland = null;
 
 function render(state) {
   const { flow } = state;
@@ -405,6 +406,7 @@ function render(state) {
   lines.setStrokes(state.strokes, want.pano);
 
   // 파노라마: 공간이 바뀌면 정면을 보고 시작
+  const samePano = Boolean(lastStepBefore) && lastPano === want.pano;
   if (lastPano && want.pano !== lastPano) {
     turnOff?.();
     viewer.setView({ yaw: 0, pitch: -4 });
@@ -416,6 +418,10 @@ function render(state) {
   // 시선 돌리기: 공간이 바뀌어 정면으로 리셋한 다음에 돈다
   if (stepChanged && t.annotate) turnTo(checkCenter);
   if (stepChanged && step.id === 'S2-2b') turnTo(dimMid);
+  // 아일랜드가 처음 놓일 때: 배치 연출이 하단 메뉴에 가리지 않게 아일랜드 쪽으로 시선을 내린다
+  const islandSpot = ANCHORS[want.pano]?.island;
+  if (want.island && !lastIsland && samePano && islandSpot) turnTo({ yaw: islandSpot.yaw, pitch: islandSpot.pitch + 8 });
+  lastIsland = want.island;
   // 옵션수정: 바닥 적용 영역이 화면 아래쪽에 오도록(지시선이 가리키는 곳)
   const prevT = STEP[lastStepBefore]?.tablet;
   if (stepChanged && t.area && !prevT?.area) turnTo({ yaw: 0, pitch: -14 });

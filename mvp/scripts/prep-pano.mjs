@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { CUT_PLACE, LAYERS, parsePanoFile } from '../src/shared/scene.js';
+import { CUT_PLACE, LAYERS, parsePanoFile, placedRect } from '../src/shared/scene.js';
 
 const DIR = fileURLToPath(new URL('../assets/pano/', import.meta.url));
 const BUILT = path.join(DIR, 'built');
@@ -104,11 +104,8 @@ async function makeLayerFromCut(pair) {
 // 오브제만 잘라 낸 누끼 → scene.js CUT_PLACE의 자리(yaw·bottom·height)에 세운 레이어
 async function makePlacedLayer(pair, meta, t0) {
   const { yaw, bottom, height } = CUT_PLACE[pair.key];
-  const hFrac = height / 180; // 세로 비율(0~1)
-  const wFrac = (hFrac * (meta.width / meta.height)) / 2; // 가로 비율: 파노라마는 가로가 세로의 2배
-  const cx = 0.5 + yaw / 360;
-  const by = 0.5 - bottom / 180;
-  const rect = [cx - wFrac / 2, by - hFrac, cx + wFrac / 2, by].map((v) => Math.round(v * 1e5) / 1e5);
+  const aspect = meta.width / meta.height;
+  const rect = placedRect(CUT_PLACE[pair.key], aspect);
   const outFiles = {};
   for (const [size, W] of [['4k', 4096], ['8k', 8192]]) {
     const width = Math.round((rect[2] - rect[0]) * W);
@@ -119,7 +116,7 @@ async function makePlacedLayer(pair, meta, t0) {
   }
   const coverage = Math.round((rect[2] - rect[0]) * (rect[3] - rect[1]) * 1e4) / 1e4;
   console.log(`  ${pair.key} (${pair.kind === 'island' ? '아일랜드' : '바닥재'}, 누끼·자리 지정 yaw ${yaw}° bottom ${bottom}° height ${height}°) · ${sec(t0)}`);
-  return { kind: pair.kind, rect, coverage, files: outFiles };
+  return { kind: pair.kind, rect, aspect, coverage, files: outFiles };
 }
 
 async function makeLayer(pair) {
