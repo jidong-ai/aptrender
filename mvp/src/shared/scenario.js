@@ -14,6 +14,7 @@
 //  quiet    가이드 표시 없이 대상만 누를 수 있게(시작화면처럼 버튼이 이미 눈에 띌 때)
 //  cta      대상이 'CTA button' 컴포넌트(이미 색으로 강조됨) → 하이라이트하지 않는다
 //  back     프롤로그 '<' 버튼으로 돌아갈 단계
+//  countdown 프롤로그 마지막 장: auto까지 남은 초를 '5초 뒤 체험이 시작됩니다'로 보여 준다
 //  next     다음 단계 id(생략하면 바로 다음). 'reset'이면 처음으로. 값마다 갈 곳이 다르면 { 값: id }
 //  copy     프롤로그 본문(캡션 말풍선 없이 화면 가운데 큰 글씨)
 //  dim      대상 외 화면을 어둡게 할지. 생략하면 작은 메뉴 버튼(tool:·nav:·category:)만 어둡게 한다
@@ -28,15 +29,14 @@ import { FLOOR_OPTIONS, ISLAND_OPTIONS } from './scene.js';
 export const SPEAKERS = { guide: '매니저', manager: '매니저', customer: '김민선' };
 
 export const STEPS = [
-  // ---------- 0 시작화면 (Figma 1254:765) · 프롤로그 (Figma 1434:3696) ----------
-  // '시작하기'는 매장으로 바로, '튜토리얼보기'는 프롤로그 3장을 거쳐 매장으로
+  // ---------- 0 시작화면 (Figma 1531:4447) · 프롤로그 4장 (Figma 1959:2104) ----------
+  // 버튼은 '상담 플로우 체험하기' 하나. 누구나 프롤로그 4장을 보고 매장으로 들어간다.
+  // 프롤로그는 장마다 러닝타임(auto)이 지나면 넘어가고, 화면을 누르면 바로 다음 장
   {
     id: 'S0-0',
     chapter: 'opening',
     target: 'start',
-    values: ['play', 'tutorial'],
-    next: { play: 'S0-4', tutorial: 'S0-1' },
-    hint: '시작하기',
+    hint: '상담 플로우 체험하기',
     cta: true,
     tablet: { screen: 'start' },
     xr: { screen: 'standby' },
@@ -47,9 +47,9 @@ export const STEPS = [
     target: 'prologue-next',
     back: 'S0-0',
     hint: '화면을 눌러 계속',
-    auto: 2000, // 누르지 않아도 2초 뒤 다음 장
+    auto: 3000, // 대시보드가 아래에서 떠오름
     quiet: true,
-    copy: '오늘의집 Weave는 소비자의 인테리어 결정을 도와주는 XR서비스에요',
+    copy: '오늘의집 Weave는 소비자의 인테리어 결정을 도와주는 웹 및 XR 서비스에요',
     tablet: { screen: 'prologue', page: 1 },
     xr: { screen: 'standby' },
   },
@@ -59,26 +59,40 @@ export const STEPS = [
     target: 'prologue-next',
     back: 'S0-1',
     hint: '화면을 눌러 계속',
-    auto: 2000, // 누르지 않아도 2초 뒤 다음 장
+    auto: 3000, // 스캔 → XR 상담 → 시공 세 단계가 차례로
     quiet: true,
-    copy: '소비자가 매장상담을 예약한 후, 꾸미고 싶은 공간을 3d 스캔해오면\n매장에서 오늘의집 매니저와 함께 공간을 완성해나가요',
+    copy: '소비자가 인테리어 상담을 진행하고 싶은 공간을 모바일로 스캔해오면,\n오늘의집 XR 쇼룸에 매니저와 함께 공간을 보며 상담을 진행해요',
     tablet: { screen: 'prologue', page: 2 },
     xr: { screen: 'standby' },
   },
   {
     id: 'S0-3',
     chapter: 'prologue',
-    target: 'prologue-start',
+    target: 'prologue-next',
     back: 'S0-2',
-    hint: '상담 플로우 시작하기',
-    cta: true,
-    copy: '오늘 당신은 오늘의집 위브 매니저입니다.\n고객의 XR 화면을 보며 상담을 진행해주세요!',
+    hint: '화면을 눌러 계속',
+    auto: 5000, // 상담 요청서 카드가 올라오고 항목이 하나씩 채워짐
+    quiet: true,
+    copy: '오늘 상담을 의뢰한 김민선 씨는 주방 부분 인테리어를 준비하며\n아일랜드 배치와 바닥재 선정에 고민이 있어 XR상담을 요청하셨어요',
     tablet: { screen: 'prologue', page: 3 },
+    xr: { screen: 'standby' },
+  },
+  {
+    id: 'S0-4',
+    chapter: 'prologue',
+    target: 'prologue-next',
+    back: 'S0-3',
+    hint: '화면을 눌러 계속',
+    auto: 5000, // '5초 뒤 체험이 시작됩니다' 숫자가 5 → 1로 줄어듦
+    quiet: true,
+    countdown: true,
+    copy: '오늘 당신은 오늘의집 위브 매니저입니다.\n태블릿으로 조작하고, 고객의 XR 화면을 함께 보며 상담을 진행해주세요!',
+    tablet: { screen: 'prologue', page: 4 },
     xr: { screen: 'standby' },
   },
   // ---------- 0 오프닝 (매장) ----------
   {
-    id: 'S0-4',
+    id: 'S0-5',
     chapter: 'opening',
     caption: { speaker: 'manager', text: '반갑습니다! Weave 매장 첫 출근을 축하드려요.\n오늘 주방 인테리어 상담을 맡으셨다구요?' },
     target: 'caption-next',
@@ -87,7 +101,7 @@ export const STEPS = [
     xr: { screen: 'standby' },
   },
   {
-    id: 'S0-5a',
+    id: 'S0-6a',
     chapter: 'opening',
     caption: { speaker: 'manager', text: '아일랜드 설치를 희망하셔서, 김민선씨가 미리 업로드해주신 주방 3d스캔본 위에서 캡션 안내에 따라 공간을 제안해주세요' },
     target: 'hotspot',
@@ -96,7 +110,7 @@ export const STEPS = [
     xr: { screen: 'standby' },
   },
   {
-    id: 'S0-5b',
+    id: 'S0-6b',
     chapter: 'opening',
     caption: { speaker: 'manager', text: '매장에서는 고객이 바닥재·타일 같은 자재 샘플을 직접 보고 만져볼 수 있어요' },
     target: 'hotspot',
@@ -105,7 +119,7 @@ export const STEPS = [
     xr: { screen: 'standby' },
   },
   {
-    id: 'S0-5c',
+    id: 'S0-6c',
     chapter: 'opening',
     caption: { speaker: 'manager', text: '상담실에서 김민선 씨가 기다리고 있어요' },
     target: 'hotspot',

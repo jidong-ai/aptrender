@@ -19,37 +19,75 @@
     <!-- UI: Figma 매니저 프레임(2264×1292) 좌표. 화면 높이에 맞춰 축소하고, 좌우는 화면 폭만큼 늘어난다 -->
     <div class="ui" id="ui">
       <!-- 시작화면 (Figma 1433:3379) -->
-      <!-- 시작화면 (Figma 1254:765). 배경은 Figma에서 글자를 뺀 사진(assets/cover/intro-bg.jpg) -->
+      <!-- 시작화면 (Figma 1531:4447). 배경은 Figma에서 글자를 뺀 사진(assets/cover/intro-bg.jpg) -->
       <section class="start" id="start">
         <img class="start-bg" src="/assets/cover/intro-bg.jpg" alt="" />
         <img class="start-logo" src="/assets/cover/weave-logo-white.svg" alt="오늘의집 Weave" />
         <p class="start-sub">Weave 매니저가 되어 고객의 반셀프<br />인테리어 상담을 도와주세요</p>
-        <button type="button" class="start-btn is-primary" data-target="start" data-value="play">시작하기<img src="/assets/ui/figma/cta-arrow.svg" alt="" /></button>
-        <button type="button" class="start-btn" data-target="start" data-value="tutorial">튜토리얼보기<img src="/assets/cover/arrow-dark.svg" alt="" /></button>
+        <button type="button" class="start-btn" data-target="start">상담 플로우 체험하기<img src="/assets/ui/figma/cta-arrow.svg" alt="" /></button>
       </section>
 
-      <!-- 프롤로그 3장 (Figma 1433:3453 · 1433:3463 · 1433:3469). 화면을 누르면 다음 장. 본문은 scenario.js의 copy -->
+      <!-- 프롤로그 4장 (Figma 1959:2104 S0-1~S0-4). 장마다 러닝타임이 지나면 넘어가고, 화면을 누르면 바로 다음 장.
+           배경(사진+어둡게)은 Figma에서 글자·이미지를 빼고 뽑은 사진(assets/ui/prologue/)으로 화면을 덮고,
+           그 위 내용(.pro-stage, Figma 2264×1292 좌표)은 화면 폭에 맞춰 줄인다 → 아이패드에서도 잘리지 않는다. 본문은 scenario.js의 copy -->
       <section class="prologue" id="prologue" hidden>
-        <button type="button" class="pro-header" id="proBack" data-free>
-          <img src="/assets/ui/figma/prologue-back.svg" alt="" />Prologue
-        </button>
         <div class="pro-frame" data-target="prologue-next" id="proFrame">
           <div class="pro-page" data-page="1">
-            <div class="pro-img is-wire">img</div>
-            <p class="pro-text"></p>
+            <img class="pro-bg" src="/assets/ui/prologue/s0-1-bg.jpg" alt="" />
+            <div class="pro-stage"><img class="pro-dash" src="/assets/ui/prologue/s0-1-dashboard.png" alt="오늘의집 Weave 웹 대시보드" /></div>
+            <div class="pro-shade"></div>
+            <div class="pro-stage"><p class="pro-text"></p></div>
           </div>
           <div class="pro-page" data-page="2">
-            <img class="pro-photo pro-photo-l" src="/assets/ui/figma/prologue-scan.jpg" alt="" />
-            <img class="pro-arrow" src="/assets/ui/figma/prologue-arrow.svg" alt="" />
-            <img class="pro-photo pro-photo-r" src="/assets/ui/figma/prologue-store.jpg" alt="" />
-            <p class="pro-text"></p>
+            <img class="pro-bg" src="/assets/ui/prologue/s0-2-bg.jpg" alt="" />
+            <div class="pro-stage">
+            <img class="pro-phone" src="/assets/ui/prologue/s0-2-phone.png" alt="" />
+            <img class="pro-step is-1" src="/assets/ui/prologue/s0-2-step1.png" alt="우리 집 3D 스캔하기" />
+            <img class="pro-link is-1" src="/assets/ui/prologue/s0-2-arrow.png" alt="" />
+            <img class="pro-step is-2" src="/assets/ui/prologue/s0-2-step2.png" alt="매니저와 XR 상담하기" />
+            <img class="pro-link is-2" src="/assets/ui/prologue/s0-2-arrow.png" alt="" />
+            <img class="pro-step is-3" src="/assets/ui/prologue/s0-2-step3.png" alt="공정대로 시공하기" />
+            </div>
+            <div class="pro-shade is-soft"></div>
+            <div class="pro-stage"><p class="pro-text"></p></div>
           </div>
           <div class="pro-page" data-page="3">
-            <div class="pro-img is-wire"><span>상담요청서img</span><b>고객: 김민선 · 의뢰: 주방에 아일랜드 놓기</b></div>
+            <img class="pro-bg" src="/assets/ui/prologue/s0-3-bg.jpg" alt="" />
+            <div class="pro-stage">
+            <!-- 상담 요청서 카드 (Figma 1964:1004): 상담 중 '상담상세' 카드와 같은 유리 카드 -->
+            <div class="req">
+              <div class="req-body"></div>
+              <div class="card-avatar"><span class="ca-photo"><img src="/assets/ui/figma/avatar.png" alt="" /></span><img class="ca-ring" src="/assets/ui/figma/detail-avatar-ring.svg" alt="" /><img class="ca-rec" src="/assets/ui/figma/detail-rec.svg" alt="" /></div>
+              <div class="req-titles"><b>김민선 고객님 상담 요청서</b><span>XR 상담 예약 · 오늘의집 북촌 쇼룸 B1F</span></div>
+              <span class="req-chip"><i></i>상담 접수 완료</span>
+              <h4 class="req-h is-l">요청 내용</h4>
+              <h4 class="req-h is-r">공유한 무드보드</h4>
+              <div class="req-row is-1"><small>의뢰 공간</small><b>주방 · 3D 스캔 업로드 완료</b></div>
+              <div class="req-row is-2"><small>요청 사항</small><b>아일랜드 식탁 놓기, 바닥재 바꾸기</b></div>
+              <div class="req-row is-3"><small>고민</small><b>아일랜드를 놓아도 지나다니기 편할지,<br />어두운 아일랜드에 어울리는 바닥재가 궁금해요</b></div>
+              <div class="req-mb">
+                <img class="is-1" src="/assets/ui/moodboard/mb-1.jpg" alt="" />
+                <img class="is-2" src="/assets/ui/moodboard/mb-2.jpg" alt="" />
+                <img class="is-3" src="/assets/ui/moodboard/mb-3.jpg" alt="" />
+                <img class="is-4" src="/assets/ui/moodboard/mb-4.jpg" alt="" />
+                <span>#원목&nbsp;&nbsp;&nbsp;#대리석&nbsp;&nbsp;&nbsp;#다크톤</span>
+              </div>
+              <i class="req-line"></i>
+              <div class="req-budget"><small>희망 예산</small><b>200만 원 이내</b></div>
+            </div>
             <p class="pro-text"></p>
+            </div>
+          </div>
+          <div class="pro-page" data-page="4">
+            <img class="pro-bg" src="/assets/ui/prologue/s0-4-bg.jpg" alt="" />
+            <div class="pro-stage"><p class="pro-text"></p></div>
           </div>
         </div>
-        <button type="button" class="cta-btn pro-cta" id="proCta" data-target="prologue-start">상담 플로우 시작하기<img src="/assets/ui/figma/cta-arrow.svg" alt="" /></button>
+        <!-- 화면 폭이 좁으면(아이패드) 프레임 양옆이 잘리므로, 머리말·남은 시간은 화면 가장자리에 붙인다 -->
+        <p class="pro-count" id="proCount" hidden><b id="proCountNum">5</b>초 뒤 체험이 시작됩니다<img src="/assets/ui/prologue/next-light.svg" alt="" /></p>
+        <button type="button" class="pro-header" id="proBack" data-free>
+          <img src="/assets/ui/prologue/back-light.svg" alt="" />Prologue
+        </button>
       </section>
 
       <!-- 가이드 UI (Figma 1438:4043): 상담 중 관람객이 할 일 -->

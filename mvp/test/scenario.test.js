@@ -23,7 +23,7 @@ function playThrough() {
 
 test('가이드 대상만 눌러 엔딩까지 가면 리셋으로 끝난다', () => {
   const { flow, visited } = playThrough();
-  assert.equal(visited.length, STEPS.length - 3); // '시작하기'는 프롤로그 3장을 건너뛴다
+  assert.equal(visited.length, STEPS.length); // 프롤로그 4장을 모두 거친다
   assert.equal(flow.step, 'S5-3');
   assert.deepEqual(flow.choices, { island: 'b', floor: 'portland' }); // 김민선이 XR에서 고른 값
   assert.deepEqual(flow.picks, ['a', 'b', 'c']);
@@ -54,8 +54,8 @@ test('김민선이 고르는 장면은 자동으로 넘어가며 선택이 정�
 test('프롤로그는 뒤로 갈 수 있고, 매장 이후는 뒤로 갈 수 없다', () => {
   const p2 = jumpFlow(createFlow(0), 'S0-2', 0);
   assert.equal(nextStep(p2, { from: 'S0-2', action: 'back' }).flow.step, 'S0-1');
-  const store = jumpFlow(createFlow(0), 'S0-4', 0);
-  assert.match(nextStep(store, { from: 'S0-4', action: 'back' }).error, /뒤로/);
+  const store = jumpFlow(createFlow(0), 'S0-5', 0);
+  assert.match(nextStep(store, { from: 'S0-5', action: 'back' }).error, /뒤로/);
 });
 
 test('잘못된 입력은 거부된다', () => {
@@ -95,7 +95,7 @@ test('S4(바닥재)부터 끝까지 태블릿·XR 모두 측면(아일랜드 누
 
 test('상담 중 안내는 가이드 UI, 매니저 말풍선은 매장 장면에서만', () => {
   for (const s of STEPS) {
-    if (s.caption?.speaker === 'manager') assert.ok(['S0-4', 'S0-5a', 'S0-5b', 'S0-5c'].includes(s.id), s.id);
+    if (s.caption?.speaker === 'manager') assert.ok(['S0-5', 'S0-6a', 'S0-6b', 'S0-6c'].includes(s.id), s.id);
     assert.notEqual(s.caption?.speaker, 'guide', s.id);
   }
 });
@@ -117,12 +117,20 @@ test('예상 금액 = 항목 합계', () => {
   assert.ok(estimate({ island: 'a' }).total < estimate({ island: 'b' }).total);
 });
 
-test('시작화면: 시작하기는 매장으로, 튜토리얼보기는 프롤로그로', () => {
-  const flow = createFlow(0);
-  assert.equal(nextStep(flow, { from: 'S0-0', action: 'start', value: 'play' }).flow.step, 'S0-4');
-  assert.equal(nextStep(flow, { from: 'S0-0', action: 'start', value: 'tutorial' }).flow.step, 'S0-1');
-  assert.ok(nextStep(flow, { from: 'S0-0', action: 'start' }).error);
-  assert.equal(nextStep(jumpFlow(flow, 'S0-3', 0), { from: 'S0-3', action: 'prologue-start' }).flow.step, 'S0-4');
+test('시작화면: 버튼 하나로 프롤로그 4장을 거쳐 매장으로(장마다 러닝타임)', () => {
+  let flow = createFlow(0);
+  flow = nextStep(flow, { from: 'S0-0', action: 'start' }).flow;
+  assert.equal(flow.step, 'S0-1');
+  const seen = [];
+  while (STEP[flow.step].chapter === 'prologue') {
+    seen.push([flow.step, STEP[flow.step].auto]);
+    flow = nextStep(flow, { from: flow.step, action: 'auto' }).flow;
+  }
+  assert.deepEqual(seen, [['S0-1', 3000], ['S0-2', 3000], ['S0-3', 5000], ['S0-4', 5000]]);
+  assert.equal(flow.step, 'S0-5'); // 매장
+  assert.ok(STEP['S0-4'].countdown);
+  // 화면을 누르면 러닝타임 전에 바로 다음 장
+  assert.equal(nextStep(jumpFlow(createFlow(0), 'S0-3', 0), { from: 'S0-3', action: 'prologue-next' }).flow.step, 'S0-4');
 });
 
 test('아웃트로: 리포트 보내기 → 상담 리포트 → 마무리 → 처음으로', () => {

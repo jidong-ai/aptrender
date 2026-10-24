@@ -33,6 +33,8 @@ const $ = (id) => document.getElementById(id);
 // ---------- 화면 맞춤: Figma 프레임 높이 기준 ----------
 function fit() {
   document.documentElement.style.setProperty('--k', innerHeight / FRAME_H);
+  // 프롤로그 내용(Figma 2264 폭)을 화면 폭에 맞춰 줄이는 비율. 아이패드(가로 1180×820)면 약 0.82
+  document.documentElement.style.setProperty('--pro-s', Math.min(1, innerWidth / (innerHeight / FRAME_H) / 2264));
 }
 addEventListener('resize', fit);
 fit();
@@ -284,6 +286,7 @@ let lastPanelKey = '';
 let lastPano = null;
 let reportLeave = 0;
 let lastIsland = null;
+let countTimer = 0;
 
 function render(state) {
   const { flow } = state;
@@ -307,10 +310,17 @@ function render(state) {
   if (screen === 'prologue') {
     $('prologue').dataset.page = t.page;
     $('prologue').querySelector(`.pro-page[data-page="${t.page}"] .pro-text`).textContent = step.copy;
-    // 1·2장은 화면 아무 곳이나 눌러 넘기고, 3장은 CTA 버튼으로 시작
-    if (step.target === 'prologue-next') $('proFrame').dataset.target = 'prologue-next';
-    else delete $('proFrame').dataset.target;
-    $('proCta').hidden = step.target !== 'prologue-start';
+  }
+  // 프롤로그 마지막 장: 체험 시작까지 남은 초(5 → 1). 서버 시각 기준이라 태블릿이 늦게 받아도 맞는다
+  $('proCount').hidden = !(screen === 'prologue' && step.countdown);
+  clearInterval(countTimer);
+  if (screen === 'prologue' && step.countdown) {
+    const tickCount = () => {
+      const left = Math.ceil((step.auto - (sync.serverNow() - flow.enteredAt)) / 1000);
+      $('proCountNum').textContent = String(Math.min(step.auto / 1000, Math.max(1, left)));
+    };
+    tickCount();
+    countTimer = setInterval(tickCount, 200);
   }
   // 상담 리포트(S5-2) → 마무리(S5-3): 리포트가 위로 접히며 사라지는 동안 마무리 화면이 겹쳐 들어온다
   const reportEl = $('report');

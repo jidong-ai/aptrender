@@ -56,13 +56,13 @@ test('태블릿의 flow 입력이 검증된 뒤 XR에 다음 단계로 중계된
   const xr = connect('xr');
   await Promise.all([tablet.next('snapshot'), xr.next('snapshot')]);
 
-  tablet.send({ type: 'flow', from: 'S0-0', action: 'start', value: 'tutorial' });
+  tablet.send({ type: 'flow', from: 'S0-0', action: 'start' });
   const msg = await xr.next('flow');
   assert.equal(msg.flow.step, 'S0-1');
 
   tablet.send({ type: 'flow', from: 'S0-1', action: 'hotspot' }); // 대상이 아님
   assert.match((await tablet.next('error')).message, /받을 수 없는/);
-  tablet.send({ type: 'flow', from: 'S0-0', action: 'start', value: 'tutorial' }); // 늦게 도착한 중복 탭
+  tablet.send({ type: 'flow', from: 'S0-0', action: 'start' }); // 늦게 도착한 중복 탭
   assert.match((await tablet.next('error')).message, /지난 단계/);
   assert.equal(server.getState().flow.step, 'S0-1');
 
