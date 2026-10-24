@@ -10,3 +10,16 @@
 | [S0-3_tablet.png](S0-3_tablet.png) | 프롤로그 3장(5초): 상담 요청서 카드(Figma 1964:1004)가 올라오고 항목이 하나씩 채워진다 |
 | [S0-4_tablet.png](S0-4_tablet.png) | 프롤로그 4장(5초): '5초 뒤 체험이 시작됩니다' 숫자만 5 → 1 (캡처 시점 3) |
 | [S0-2_anim.jpg](S0-2_anim.jpg) · [S0-3_anim.jpg](S0-3_anim.jpg) | 연출 시각별 컷. 캡처가 느려 서버 자동 진행이 겹친 컷(다음 장)이 섞여 있다 |
+
+## 매장 장면 (말풍선 한 장에 정보 하나, 매니저 캐릭터)
+
+| 파일 | 배경 | 내용 |
+|---|---|---|
+| [S0-5_tablet.png](S0-5_tablet.png) | store_1 | 반갑습니다! Weave 매장 첫 출근을 축하드려요. |
+| [S0-6a_tablet.png](S0-6a_tablet.png) | store_1 | 매니저 정면이 왼쪽 아래에서 다가와 선다(숨 쉬듯 살짝 움직임). 화살표로 안쪽 이동 |
+| [S0-6b_tablet.png](S0-6b_tablet.png) | store_2 | 매니저 뒷모습이 앞장서 걸어 들어간다. 가운데 화살표를 가리지 않게 왼쪽 |
+| [S0-6c_tablet.png](S0-6c_tablet.png) | store_3 | 실물 샘플 안내 |
+| [S0-6d_tablet.png](S0-6d_tablet.png) | store_3 확대 | 복도 쪽으로 시선을 옮기며 확대(1.4초) |
+| [S0-6e_tablet.png](S0-6e_tablet.png) | store_3 확대 | 같은 시야에서 화살표로 상담실 이동. 상담실에 들어가면 원래 시야로 |
+
+- S0-2 캡처는 쇼룸 이름을 '오늘의집 북촌 쇼룸 B1F'로 바꾼 뒤 다시 찍었다

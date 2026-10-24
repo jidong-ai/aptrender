@@ -91,10 +91,13 @@ export const STEPS = [
     xr: { screen: 'standby' },
   },
   // ---------- 0 오프닝 (매장) ----------
+  // 말풍선 하나에 정보 하나. 매장 사진 한 장을 여러 장면이 나눠 쓴다.
+  // character: 화자인 매니저가 직접 등장('front' 정면 · 'back' 뒷모습, assets/character/)
+  // view: 같은 공간 안에서 시선을 옮기고 확대(yaw·pitch·fov, 도). 공간이 바뀌면 원래 시야로 돌아온다
   {
     id: 'S0-5',
     chapter: 'opening',
-    caption: { speaker: 'manager', text: '반갑습니다! Weave 매장 첫 출근을 축하드려요.\n오늘 주방 인테리어 상담을 맡으셨다구요?' },
+    caption: { speaker: 'manager', text: '반갑습니다! Weave 매장 첫 출근을 축하드려요.' },
     target: 'caption-next',
     hint: '다음',
     tablet: { pano: 'store_1' },
@@ -103,28 +106,46 @@ export const STEPS = [
   {
     id: 'S0-6a',
     chapter: 'opening',
-    caption: { speaker: 'manager', text: '아일랜드 설치를 희망하셔서, 김민선씨가 미리 업로드해주신 주방 3d스캔본 위에서 캡션 안내에 따라 공간을 제안해주세요' },
+    caption: { speaker: 'manager', text: '김민선씨의 아파트 주방 스캔본을 보면서 상담을 진행할텐데,\n오늘은 첫 컨설팅이니까 제가 함께 동행할거에요' },
     target: 'hotspot',
     hint: '화살표를 눌러 안으로 이동',
-    tablet: { pano: 'store_1' },
+    tablet: { pano: 'store_1', character: 'front' },
     xr: { screen: 'standby' },
   },
   {
     id: 'S0-6b',
     chapter: 'opening',
-    caption: { speaker: 'manager', text: '매장에서는 고객이 바닥재·타일 같은 자재 샘플을 직접 보고 만져볼 수 있어요' },
+    caption: { speaker: 'manager', text: '이곳은 상담 전 자재를 둘러볼 수 있는 공간이에요.' },
     target: 'hotspot',
     hint: '화살표를 눌러 안으로 이동',
-    tablet: { pano: 'store_2' },
+    tablet: { pano: 'store_2', character: 'back' },
     xr: { screen: 'standby' },
   },
   {
     id: 'S0-6c',
     chapter: 'opening',
-    caption: { speaker: 'manager', text: '상담실에서 김민선 씨가 기다리고 있어요' },
+    caption: { speaker: 'manager', text: '실물 샘플이 비치되어있어서, 상담 중 필요한 자재는 직접 가져다 제안할 수 있어요' },
+    target: 'caption-next',
+    hint: '다음',
+    tablet: { pano: 'store_3' },
+    xr: { screen: 'standby' },
+  },
+  {
+    id: 'S0-6d',
+    chapter: 'opening',
+    caption: { speaker: 'manager', text: '상담실에서 김민선 씨가 기다리고 있으니, 이제 이동해볼게요.' },
+    target: 'caption-next',
+    hint: '다음',
+    tablet: { pano: 'store_3', view: { yaw: -11, pitch: -3, fov: 50 } }, // 상담실로 이어지는 복도 쪽으로 확대
+    xr: { screen: 'standby' },
+  },
+  {
+    id: 'S0-6e',
+    chapter: 'opening',
+    caption: { speaker: 'manager', text: '캡션 안내에 따라 순서대로 상담을 진행해주세요' },
     target: 'hotspot',
     hint: '화살표를 눌러 상담실로 이동',
-    tablet: { pano: 'store_3' },
+    tablet: { pano: 'store_3', view: { yaw: -11, pitch: -3, fov: 50 } },
     xr: { screen: 'standby' },
   },
   // ---------- 1 로딩 ----------

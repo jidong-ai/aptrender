@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STEPS, STEP, clearsStrokes, createFlow, jumpFlow, nextStep, tabletSceneFor, xrSceneFor } from '../src/shared/scenario.js';
 import { estimate } from '../src/shared/catalog.js';
-import { LAYERS, PANOS, layerIdFor } from '../src/shared/scene.js';
+import { ANCHORS, LAYERS, PANOS, layerIdFor } from '../src/shared/scene.js';
 
 // 가이드 대상만 눌러 처음부터 끝까지 진행한다(collect 단계는 남은 값을 차례로)
 function playThrough() {
@@ -95,7 +95,7 @@ test('S4(바닥재)부터 끝까지 태블릿·XR 모두 측면(아일랜드 누
 
 test('상담 중 안내는 가이드 UI, 매니저 말풍선은 매장 장면에서만', () => {
   for (const s of STEPS) {
-    if (s.caption?.speaker === 'manager') assert.ok(['S0-5', 'S0-6a', 'S0-6b', 'S0-6c'].includes(s.id), s.id);
+    if (s.caption?.speaker === 'manager') assert.ok(['S0-5', 'S0-6a', 'S0-6b', 'S0-6c', 'S0-6d', 'S0-6e'].includes(s.id), s.id);
     assert.notEqual(s.caption?.speaker, 'guide', s.id);
   }
 });
@@ -131,6 +131,17 @@ test('시작화면: 버튼 하나로 프롤로그 4장을 거쳐 매장으로(�
   assert.ok(STEP['S0-4'].countdown);
   // 화면을 누르면 러닝타임 전에 바로 다음 장
   assert.equal(nextStep(jumpFlow(createFlow(0), 'S0-3', 0), { from: 'S0-3', action: 'prologue-next' }).flow.step, 'S0-4');
+});
+
+test('매장: 화살표를 누르는 장면은 그 화살표가 가리키는 공간으로 넘어간다', () => {
+  for (const s of STEPS.filter((x) => x.target === 'hotspot')) {
+    const spot = ANCHORS[s.tablet.pano]?.hotspot;
+    assert.ok(spot, `${s.id}: ${s.tablet.pano}에 화살표가 없음`);
+    assert.equal(STEPS[STEP[s.id].index + 1].tablet.pano, spot.to, s.id);
+  }
+  assert.equal(STEP['S0-6a'].tablet.character, 'front');
+  assert.equal(STEP['S0-6b'].tablet.character, 'back');
+  assert.deepEqual(STEP['S0-6d'].tablet.view, STEP['S0-6e'].tablet.view); // 같은 복도 시야에서 이어짐
 });
 
 test('아웃트로: 리포트 보내기 → 상담 리포트 → 마무리 → 처음으로', () => {

@@ -31,7 +31,7 @@ const XR = { standby: '대기 화면', boot: '부팅', ending: '상담 리포트
 const esc = (t) => t.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
 const rows = STEPS.map((s) => {
   const t = s.tablet;
-  const extras = [t.moodboard && '무드보드', t.area === 'blink' && '바닥면 깜박임', t.area === 'on' && '바닥 선택 영역', t.waiting && '대기'].filter(Boolean);
+  const extras = [t.character && (t.character === 'front' ? '매니저 정면' : '매니저 뒷모습'), t.view && '복도 쪽 확대', t.moodboard && '무드보드', t.area === 'blink' && '바닥면 깜박임', t.area === 'on' && '바닥 선택 영역', t.waiting && '대기'].filter(Boolean);
   const tablet =
     t.screen === 'start' ? '시작화면(Figma 1531:4447)' : t.screen === 'prologue' ? `프롤로그 ${t.page}장(Figma ${['1433:3453', '1433:3463', '1433:3469', '1958:2039'][t.page - 1]})` : t.screen === 'report' ? `${t.pano} + 상담 리포트` : t.screen === 'outro' ? '마무리(Figma 1254:793)' : `${t.pano}${t.panel ? ` + ${PANEL[t.panel]}${t.expand ? '(후보 펼침)' : ''}` : ''}${t.annotate ? ' + 주석 도구' : ''}${extras.map((x) => ` + ${x}`).join('')}`;
   const caption = s.caption ? `${SPEAKERS[s.caption.speaker]}: ${esc(s.caption.text)}` : s.copy ? `(본문) ${esc(s.copy)}` : '—';
@@ -60,7 +60,7 @@ const md = `# 체험 단계표 (게임형 가이드 플로우)
 
 > 이 표는 \`src/shared/scenario.js\`에서 만든다. 문구·순서를 바꾸려면 scenario.js를 고친 뒤 \`npm run docs:scenario\`.
 
-- 체험자가 매니저 역할이라 헷갈리지 않게, **매니저 말풍선은 매장 장면(S0-5~S0-6c)에만** 나온다. 상담 중에는 **가이드 UI**(Figma 1438:4043, 상단 도구 아래 파란 글씨 한 줄)가 할 일을 알려 준다
+- 체험자가 매니저 역할이라 헷갈리지 않게, **매니저 말풍선은 매장 장면(S0-5~S0-6e)에만** 나온다. 상담 중에는 **가이드 UI**(Figma 1438:4043, 상단 도구 아래 파란 글씨 한 줄)가 할 일을 알려 준다
 - 김민선 말풍선(Figma 1434:3719)은 고객 대사. XR 자막에도 같은 말이 나온다. 체험자가 맡은 매니저의 대사(\`say\`)는 태블릿에는 안 보이고 XR 자막으로만 나온다(고객이 듣는 말)
 - S3·S4는 **매니저가 제안 → 김민선이 XR에서 고른다**: 태블릿에서 제안한 제품이 XR에 카드로 뜨고, 김민선이 카드를 살펴보다 하나를 고르는 장면이 재생된다(그동안 태블릿은 '고르는 중' 대기)
 - 말풍선을 누르면 다음으로(» 화살표가 움직여 알려 줌). 'CTA button'(시작하기·상담 플로우 시작하기·적용하기·상담 리포트 보내기·다시 체험하기)은 이미 색으로 강조되므로 가이드 링을 띄우지 않는다

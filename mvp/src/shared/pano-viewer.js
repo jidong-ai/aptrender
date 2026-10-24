@@ -392,7 +392,7 @@ export class PanoViewer {
   dolly({ yaw, pitch }, ms = 650) {
     const from = { yaw: this.yaw, pitch: this.pitch, fov: this.fovValue };
     const to = { yaw: from.yaw + wrapYaw(yaw - from.yaw), pitch: Math.max(-20, pitch * 0.4), fov: from.fov * 0.72 };
-    this.zoomBack = from.fov;
+    this.zoomBack = this.zoomBack ?? from.fov; // 이미 확대해 둔 시야(장면의 view)에서 떠나도 원래 시야로 돌아오게
     const start = performance.now();
     return new Promise((resolve) => {
       const off = this.onFrame((dt, now) => {

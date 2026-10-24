@@ -83,7 +83,7 @@ export const ANCHORS = {
   // 매장 렌더(10/8): 바닥 화살표는 다음 공간 쪽 통로 바닥. 사람·가구와 겹치지 않는 자리
   store_1: { hotspot: { yaw: 8, pitch: -22, to: 'store_2', label: '안쪽으로' } },
   store_2: { hotspot: { yaw: -6, pitch: -24, to: 'store_3', label: '안쪽으로' } },
-  store_3: { hotspot: { yaw: -7, pitch: -20, to: 'counsel', label: '상담실로' } },
+  store_3: { hotspot: { yaw: -11, pitch: -11, to: 'counsel', label: '상담실로' } }, // 복도 입구 바닥(S0-6d·e에서 복도 쪽으로 확대한 시야 안)
   counsel: {},
   kitchen_front: {
     island: { yaw: -5, pitch: -20 }, // 아일랜드 누끼(CUT_PLACE.island_b_front) 가운데. 배치 연출 때 시선이 여기로

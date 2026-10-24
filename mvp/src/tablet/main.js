@@ -125,15 +125,18 @@ const dimMid = (() => {
 
 // 시선을 대상 쪽으로 천천히 돌린다(체크 자리, 아일랜드 자리)
 let turnOff = null;
+/** 시선을 target { yaw, pitch[, fov] }로 부드럽게. fov를 주면 확대도 함께(공간이 바뀔 때 resetZoom으로 되돌아감) */
 function turnTo(target, ms = 900) {
   turnOff?.();
-  const from = { yaw: viewer.yaw, pitch: viewer.pitch };
+  const from = { yaw: viewer.yaw, pitch: viewer.pitch, fov: viewer.fovValue };
   const dy = wrapYaw(target.yaw - from.yaw);
+  const toFov = target.fov ?? from.fov;
+  if (target.fov !== undefined && viewer.zoomBack === undefined) viewer.zoomBack = from.fov;
   const start = performance.now();
   turnOff = viewer.onFrame((dt, now) => {
     const t = Math.min(1, (now - start) / ms);
     const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-    viewer.setView({ yaw: from.yaw + dy * e, pitch: from.pitch + (target.pitch - from.pitch) * e });
+    viewer.setView({ yaw: from.yaw + dy * e, pitch: from.pitch + (target.pitch - from.pitch) * e, fov: from.fov + (toFov - from.fov) * e });
     if (t >= 1) {
       turnOff();
       turnOff = null;
@@ -195,6 +198,7 @@ document.addEventListener('click', async (e) => {
     const spot = ANCHORS[STEP[latest.flow.step].tablet.pano]?.hotspot;
     busy = true;
     coach.clear();
+    if (!$('managerChar').hidden) $('managerChar').classList.add('is-leaving'); // 다음 공간으로 가며 캐릭터도 사라짐
     await viewer.dolly(spot);
     busy = false;
   }
@@ -287,6 +291,7 @@ let lastPano = null;
 let reportLeave = 0;
 let lastIsland = null;
 let countTimer = 0;
+let lastPose = null;
 
 function render(state) {
   const { flow } = state;
@@ -339,6 +344,22 @@ function render(state) {
     reportEl.hidden = true;
   }
   $('outro').hidden = screen !== 'outro';
+
+  // 화자 매니저 캐릭터: 자세가 바뀔 때마다 등장 연출을 처음부터
+  const pose = screen === 'pano' ? (t.character ?? null) : null;
+  if (pose !== lastPose) {
+    const char = $('managerChar');
+    char.hidden = !pose;
+    char.classList.remove('is-leaving');
+    if (pose) {
+      $('managerCharImg').src = `/assets/character/manager_${pose}.png`;
+      char.dataset.pose = pose;
+      char.style.animation = 'none';
+      void char.offsetWidth;
+      char.style.animation = '';
+    }
+    lastPose = pose;
+  }
 
   // 캡션
   const cap = step.caption && (screen === 'pano' || screen === 'report') ? step.caption : null;
@@ -428,6 +449,8 @@ function render(state) {
   // 시선 돌리기: 공간이 바뀌어 정면으로 리셋한 다음에 돈다
   if (stepChanged && t.annotate) turnTo(checkCenter);
   if (stepChanged && step.id === 'S2-2b') turnTo(dimMid);
+  // 같은 공간 안에서 시선 옮기기·확대(매장 S0-6d·e: 복도 쪽)
+  if (stepChanged && t.view) turnTo(t.view, 1400);
   // 아일랜드가 처음 놓일 때: 배치 연출이 하단 메뉴에 가리지 않게 아일랜드 쪽으로 시선을 내린다
   const islandSpot = ANCHORS[want.pano]?.island;
   if (want.island && !lastIsland && samePano && islandSpot) turnTo({ yaw: islandSpot.yaw, pitch: islandSpot.pitch + 8 });

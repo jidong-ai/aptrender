@@ -363,6 +363,26 @@
   animation-delay: 1.8s;
 }
 
+/* 2단계 이미지의 쇼룸 이름은 글자로 얹는다(Figma 1958:2025와 같은 글꼴·색). 이미지에서는 지움 */
+.pro-step img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pro-step-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 391px;
+  font-size: 17.08px;
+  font-weight: 600;
+  line-height: 22px;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: #eff3f5;
+}
+
 @keyframes pro-step {
   from {
     opacity: 0;
@@ -700,6 +720,78 @@
   from {
     opacity: 0;
     transform: scale(0.85);
+  }
+}
+
+/* ---------- 화자 매니저 캐릭터 (매장 장면) ----------
+   전신 이미지(626×1730)를 왼쪽에 크게 두고 허리 아래는 화면 밖. 누르기·둘러보기는 막지 않는다 */
+.manager-char {
+  position: absolute;
+  left: 230px;
+  top: 307px;
+  height: 1938px;
+  z-index: 2;
+  pointer-events: none !important;
+  transform-origin: 50% 25%;
+}
+
+.manager-char img {
+  display: block;
+  height: 100%;
+}
+
+/* 정면: 왼쪽 아래에서 다가와 서고, 숨 쉬듯 살짝 움직인다 */
+.manager-char[data-pose='front'] {
+  animation: char-in 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) 0.3s both;
+}
+
+.manager-char[data-pose='front'] img {
+  animation: char-breathe 3.2s ease-in-out 1.2s infinite alternate;
+}
+
+/* 뒷모습: 앞장서 매장 안쪽으로 걸어 들어간다(걸음마다 살짝 흔들림) */
+.manager-char[data-pose='back'] {
+  left: 170px; /* 가운데 바닥 화살표를 가리지 않게 왼쪽 */
+  top: 400px;
+  height: 1560px; /* 정면보다 작게: 한 걸음 앞서 걷는 느낌 */
+  animation: char-walk 2.2s cubic-bezier(0.25, 0.6, 0.3, 1) 0.2s both;
+}
+
+.manager-char[data-pose='back'] img {
+  animation: char-bob 0.44s ease-in-out 0.3s 4 alternate;
+}
+
+.manager-char.is-leaving {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+@keyframes char-in {
+  from {
+    opacity: 0;
+    transform: translate(-60px, 40px);
+  }
+}
+
+@keyframes char-breathe {
+  to {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes char-walk {
+  from {
+    opacity: 0;
+    transform: translate(-90px, 140px) scale(1.18);
+  }
+  20% {
+    opacity: 1;
+  }
+}
+
+@keyframes char-bob {
+  to {
+    transform: translateY(-9px);
   }
 }
 
