@@ -126,7 +126,7 @@ test('시작화면: 버튼 하나로 프롤로그 4장을 거쳐 매장으로(�
     seen.push([flow.step, STEP[flow.step].auto]);
     flow = nextStep(flow, { from: flow.step, action: 'auto' }).flow;
   }
-  assert.deepEqual(seen, [['S0-1', 3000], ['S0-2', 3000], ['S0-3', 5000], ['S0-4', 5000]]);
+  assert.deepEqual(seen, [['S0-1', 3000], ['S0-2', 5000], ['S0-3', 7000], ['S0-4', 5000]]);
   assert.equal(flow.step, 'S0-5'); // 매장
   assert.ok(STEP['S0-4'].countdown);
   // 화면을 누르면 러닝타임 전에 바로 다음 장

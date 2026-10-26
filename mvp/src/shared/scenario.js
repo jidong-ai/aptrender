@@ -59,7 +59,7 @@ export const STEPS = [
     target: 'prologue-next',
     back: 'S0-1',
     hint: '화면을 눌러 계속',
-    auto: 3000, // 스캔 → XR 상담 → 시공 세 단계가 차례로
+    auto: 5000, // 스캔 → XR 상담 → 시공 세 단계가 차례로(10/26 캡션을 다 읽게 3 → 5초)
     quiet: true,
     copy: '소비자가 인테리어 상담을 진행하고 싶은 공간을 모바일로 스캔해오면,\n오늘의집 XR 쇼룸에 매니저와 함께 공간을 보며 상담을 진행해요',
     tablet: { screen: 'prologue', page: 2 },
@@ -71,7 +71,7 @@ export const STEPS = [
     target: 'prologue-next',
     back: 'S0-2',
     hint: '화면을 눌러 계속',
-    auto: 5000, // 상담 요청서 카드가 올라오고 항목이 하나씩 채워짐
+    auto: 7000, // 상담 요청서 카드가 올라오고 항목이 하나씩 채워짐(10/26 캡션을 다 읽게 5 → 7초)
     quiet: true,
     copy: '오늘 상담을 의뢰한 김민선 씨는 주방 부분 인테리어를 준비하며\n아일랜드 배치와 바닥재 선정에 고민이 있어 XR상담을 요청하셨어요',
     tablet: { screen: 'prologue', page: 3 },
