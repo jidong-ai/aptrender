@@ -1705,10 +1705,10 @@
 /* 김민선: 오른쪽에서 헤드셋을 쓰는 모습(허리 아래는 화면 밖) */
 .loading-kim {
   position: absolute;
-  left: 1236px;
-  top: 181px;
-  width: 639px;
-  height: 1111px;
+  left: 1154px;
+  top: 109px;
+  width: 780px;
+  height: 1183px;
   animation: kim-in 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) 0.1s both;
 }
 
