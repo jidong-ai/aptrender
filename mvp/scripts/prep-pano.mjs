@@ -4,13 +4,16 @@
 //  2) 원본이 PNG면 아이맥용 8K JPG(PNG보다 가벼워 XR 화면이 덜 멈춘다)
 //  3) 오브제·자재 레이어(built/layers/)
 //     - 누끼 파일(이름_cut.png)이 있으면 그걸 그대로 쓴다  ← 기본
+//     - 바닥재 렌더(floor_*.png)는 바닥 영역 마스크(masks/{장면}_floor.svg, 마스크 편집기 /mask로 그림)만큼 잘라 쓴다.
+//       마스크가 없으면 scene.js의 FLOOR_AREA 기본 영역
 //     - --auto 를 붙이면 누끼가 없는 조합은 "옵션 렌더 − 기본 렌더" 차이로 자동 오려낸다(미리보기용)
 // 이미 만든 파일은 건너뛴다. 다시 만들려면 npm run pano:prep -- --force
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { CUT_PLACE, LAYERS, parsePanoFile, placedRect } from '../src/shared/scene.js';
+import { CUT_PLACE, FLOOR_AREA, LAYERS, parsePanoFile, placedRect } from '../src/shared/scene.js';
+import { maskSvg } from '../src/shared/floor-mask.js';
 
 const DIR = fileURLToPath(new URL('../assets/pano/', import.meta.url));
 const BUILT = path.join(DIR, 'built');
@@ -64,10 +67,14 @@ for (const file of files) {
 // ---------- 3) 레이어 ----------
 // 레이어 = scene.js의 LAYERS. 누끼(_cut.png)가 기본, --auto면 "레이어 렌더 − 배경 렌더" 차이로 자동 오려내기
 // 바닥재 렌더는 아일랜드 없이 하므로 둘 다 같은 배경과 비교한다
+// 바닥 영역 마스크 파일(masks/{장면}_floor.svg|png). 없으면 null → FLOOR_AREA 기본 영역
+const floorMaskFile = (pano) => ['svg', 'png'].map((ext) => `masks/${pano}_floor.${ext}`).find((rel) => fs.existsSync(path.join(DIR, rel))) ?? null;
+
 const pairs = [];
 for (const [id, def] of Object.entries(LAYERS)) {
   const base = sources[def.pano];
-  if (base && (cuts[id] || (auto && sources[id]))) pairs.push({ key: id, kind: def.kind, cut: cuts[id], from: base, to: sources[id] });
+  if (base && !cuts[id] && sources[id] && def.kind === 'floor') pairs.push({ key: id, kind: def.kind, from: base, to: sources[id], mask: floorMaskFile(def.pano), pano: def.pano });
+  else if (base && (cuts[id] || (auto && sources[id]))) pairs.push({ key: id, kind: def.kind, cut: cuts[id], from: base, to: sources[id] });
   else if (cuts[id] && !base) console.log(`  ! ${cuts[id]}: 배경 ${def.pano} 렌더가 없어 레이어를 만들 수 없습니다`);
 }
 
@@ -119,8 +126,21 @@ async function makePlacedLayer(pair, meta, t0) {
   return { kind: pair.kind, rect, aspect, coverage, files: outFiles };
 }
 
+// 바닥재 렌더 → 바닥 영역 마스크만큼 잘라 낸 레이어
+async function makeMaskedLayer(pair) {
+  const t0 = Date.now();
+  const src = pair.mask ? path.join(DIR, pair.mask) : Buffer.from(maskSvg(FLOOR_AREA[pair.pano] ?? []));
+  const raw = await sharp(src, { density: 72 }).resize(DW, DH, { fit: 'fill' }).ensureAlpha().extractChannel(3).raw().toBuffer();
+  // Figma 채우기가 반투명이어도 영역 안은 꽉 차게, 경계만 살짝 부드럽게
+  for (let i = 0; i < raw.length; i++) raw[i] = raw[i] > 8 ? 255 : 0;
+  const alpha = await blur(raw, 0.8);
+  const rgb = (W, H, area) => open(pair.to).removeAlpha().resize(W, H, { fit: 'fill' }).extract(area).raw().toBuffer();
+  return writeLayer(pair, alpha, rgb, 3, t0, pair.mask ? `바닥 영역 ${pair.mask}` : '바닥 영역 기본값(FLOOR_AREA)');
+}
+
 async function makeLayer(pair) {
   if (pair.cut) return makeLayerFromCut(pair);
+  if ('mask' in pair) return makeMaskedLayer(pair);
   const t0 = Date.now();
   const small = (file) => open(file).removeAlpha().resize(DW, DH, { fit: 'fill' }).raw().toBuffer();
   const [A, B] = await Promise.all([small(pair.from), small(pair.to)]);
@@ -172,7 +192,7 @@ async function writeLayer(pair, alpha, readPixels, channels, t0, how) {
     return null;
   }
   const coverage = covered / (DW * DH);
-  if (!pair.cut && coverage > WARN_COVERAGE) {
+  if (!pair.cut && !('mask' in pair) && coverage > WARN_COVERAGE) {
     console.log(`  ! ${pair.key}: 화면의 ${Math.round(coverage * 100)}%가 바뀌었습니다. 두 렌더의 카메라 위치나 노출이 다른 것 같습니다(D5 노출 수동 고정 권장)`);
   }
 
@@ -208,7 +228,11 @@ if (pairs.length) {
   console.log(`\n레이어 오려내기 (${pairs.length}개 조합)`);
   const next = { version: 1, layers: {} };
   for (const pair of pairs) {
-    const sig = pair.cut ? [signature(pair.cut), signature(pair.from), JSON.stringify(CUT_PLACE[pair.key] ?? null)] : [signature(pair.from), signature(pair.to), 'auto'];
+    const sig = pair.cut
+      ? [signature(pair.cut), signature(pair.from), JSON.stringify(CUT_PLACE[pair.key] ?? null)]
+      : 'mask' in pair
+        ? [signature(pair.to), pair.mask ? signature(pair.mask) : JSON.stringify(FLOOR_AREA[pair.pano] ?? null), 'mask']
+        : [signature(pair.from), signature(pair.to), 'auto'];
     const old = manifest.layers?.[pair.key];
     const fresh = old && JSON.stringify(old.sources) === JSON.stringify(sig) && Object.values(old.files).every((f) => fs.existsSync(path.join(DIR, f)));
     if (fresh && !force) {

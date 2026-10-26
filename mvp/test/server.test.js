@@ -221,3 +221,17 @@ test('레이어 목록: manifest에 있고 파일이 실제로 있는 것만', (
   assert.deepEqual(listLayers(path.join(dir, 'nope')), {});
   fs.rmSync(dir, { recursive: true });
 });
+
+test('바닥 영역 마스크: 편집기 SVG를 저장하고 다시 읽는다, 위험한 SVG는 거부', async () => {
+  const { saveMask, listMasks } = await import('../server/app.js');
+  const { maskSvg, maskPoints } = await import('../src/shared/floor-mask.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pano-'));
+  const pts = [[0, 0.7], [1, 0.7], [1, 1], [0, 1]];
+  saveMask('kitchen_side', maskSvg(pts), dir);
+  const svg = fs.readFileSync(path.join(dir, 'masks', 'kitchen_side_floor.svg'), 'utf8');
+  assert.deepEqual(maskPoints(svg), pts);
+  assert.match(listMasks(dir).kitchen_side_floor, /^\/assets\/pano\/masks\/kitchen_side_floor\.svg\?v=\d+$/);
+  assert.throws(() => saveMask('kitchen_side', '<svg><script>alert(1)</script></svg>', dir), /형식/);
+  assert.throws(() => saveMask('nope', maskSvg(pts), dir), /장면/);
+  fs.rmSync(dir, { recursive: true });
+});

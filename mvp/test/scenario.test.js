@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STEPS, STEP, clearsStrokes, createFlow, jumpFlow, nextStep, tabletSceneFor, xrSceneFor } from '../src/shared/scenario.js';
 import { estimate } from '../src/shared/catalog.js';
-import { ANCHORS, LAYERS, PANOS, layerIdFor } from '../src/shared/scene.js';
+import { ANCHORS, LAYERS, PANOS, layerIdFor, parsePanoFile } from '../src/shared/scene.js';
 
 // 가이드 대상만 눌러 처음부터 끝까지 진행한다(collect 단계는 남은 값을 차례로)
 function playThrough() {
@@ -142,6 +142,11 @@ test('매장: 화살표를 누르는 장면은 그 화살표가 가리키는 공
   assert.equal(STEP['S0-6a'].tablet.character, 'front');
   assert.equal(STEP['S0-6b'].tablet.character, 'back');
   assert.deepEqual(STEP['S0-6d'].tablet.view, STEP['S0-6e'].tablet.view); // 같은 복도 시야에서 이어짐
+});
+
+test('바닥재 측면 렌더를 _left 이름으로 올려도 측면 레이어로 인식', () => {
+  assert.deepEqual(parsePanoFile('floor_portland_left.png'), { id: 'floor_portland_side', size: '8k' });
+  assert.deepEqual(parsePanoFile('floor_portland_front.png'), { id: 'floor_portland_front', size: '8k' });
 });
 
 test('아웃트로: 리포트 보내기 → 상담 리포트 → 마무리 → 처음으로', () => {

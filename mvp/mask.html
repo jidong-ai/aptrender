@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Weave · 바닥재 선택 영역</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #17191c;
+        --panel: #23262b;
+        --line: #3a3f46;
+        --text: #e9edf2;
+        --sub: #9aa3ad;
+        --blue: #1aa0ff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+        font-size: 14px;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 16px;
+        padding: 12px 16px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+      }
+      h1 {
+        margin: 0 8px 0 0;
+        font-size: 16px;
+      }
+      label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--sub);
+      }
+      select,
+      button {
+        height: 32px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #2d3137;
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: #59616b;
+      }
+      button.primary {
+        border-color: var(--blue);
+        background: var(--blue);
+        color: #fff;
+        font-weight: 600;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .seg {
+        display: inline-flex;
+      }
+      .seg button {
+        border-radius: 0;
+      }
+      .seg button:first-child {
+        border-radius: 8px 0 0 8px;
+      }
+      .seg button:last-child {
+        border-radius: 0 8px 8px 0;
+      }
+      .seg button[aria-pressed='true'] {
+        background: #3a4250;
+        border-color: #6b7685;
+      }
+      .spacer {
+        flex: 1;
+      }
+      .help {
+        padding: 8px 16px;
+        color: var(--sub);
+        line-height: 1.6;
+      }
+      .help b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      #status {
+        min-height: 20px;
+        color: var(--sub);
+      }
+      #status.ok {
+        color: #6fd39a;
+      }
+      #status.err {
+        color: #ff8a7a;
+      }
+      .stage {
+        overflow: auto;
+        padding: 0 16px 24px;
+      }
+      canvas {
+        display: block;
+        cursor: crosshair;
+        touch-action: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>바닥재 선택 영역</h1>
+      <label>장면 <select id="pano"></select></label>
+      <div class="seg" id="mode">
+        <button type="button" data-mode="area" aria-pressed="true">영역 보기</button>
+        <button type="button" data-mode="floor">바닥재 렌더</button>
+        <button type="button" data-mode="preview">적용 미리보기</button>
+      </div>
+      <label>확대 <select id="zoom"><option value="1">1배</option><option value="2">2배</option><option value="3">3배</option></select></label>
+      <button type="button" id="undo">점 되돌리기</button>
+      <button type="button" id="clear">모두 지우기</button>
+      <button type="button" id="reset">기본 영역</button>
+      <span class="spacer"></span>
+      <button type="button" id="download">SVG 내려받기</button>
+      <button type="button" class="primary" id="save">저장하고 바닥재 다시 만들기</button>
+    </header>
+    <p class="help">
+      <b>클릭</b> 점 추가 · <b>점 끌기</b> 이동 · <b>선 위 클릭</b> 그 사이에 점 넣기 · <b>점 더블클릭</b>(또는 Alt+클릭) 삭제. 파노라마 아래쪽 끝은 발밑이라, 바닥 전체를 칠하려면 아래 모서리까지 감싼다.
+      <br />저장하면 <b>assets/pano/masks/{장면}_floor.svg</b>에 쓰고, 바닥재 레이어를 다시 자른다(태블릿·아이맥은 새로고침). 파란 '선택 영역'도 이 모양을 쓴다.
+      <span id="status"></span>
+    </p>
+    <div class="stage"><canvas id="cv"></canvas></div>
+    <script type="module" src="/src/mask/main.js"></script>
+  </body>
+</html>

@@ -16,7 +16,7 @@ export default defineConfig({
     assetsDir: 'static', // /assets 경로는 파노라마·UI 원본 폴더용으로 비워둔다
     chunkSizeWarningLimit: 1500, // three.js 포함. 로컬 LAN 전용이라 나누지 않는다
     rolldownOptions: {
-      input: { index: page('index'), tablet: page('tablet'), xr: page('xr') },
+      input: { index: page('index'), tablet: page('tablet'), xr: page('xr'), mask: page('mask') },
     },
   },
 });

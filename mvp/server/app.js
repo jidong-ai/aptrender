@@ -12,7 +12,9 @@ import {
   sanitizePts,
   sanitizeStroke,
 } from '../src/shared/protocol.js';
-import { CUT_PLACE, parsePanoFile, placedRect } from '../src/shared/scene.js';
+import { CUT_PLACE, PANOS, parsePanoFile, placedRect } from '../src/shared/scene.js';
+import { isSafeMaskSvg } from '../src/shared/floor-mask.js';
+import { execFile } from 'node:child_process';
 import { STAT_KEYS, STEP, clearsStrokes, jumpFlow, nextStep } from '../src/shared/scenario.js';
 import { getLanAddresses } from './lan.js';
 
@@ -68,6 +70,29 @@ export function listLayers(dir = PANO_DIR) {
 }
 
 // 바닥재 적용 영역 마스크(Figma 펜툴로 그려 내보낸 파일): assets/pano/masks/{장면}_floor.svg|png
+/** 바닥 영역 마스크 저장(마스크 편집기 /mask). 같은 이름 파일을 덮어쓴다 */
+export function saveMask(pano, svg, dir = PANO_DIR) {
+  if (!PANOS[pano]) throw new Error(`알 수 없는 장면: ${pano}`);
+  if (!isSafeMaskSvg(svg)) throw new Error('마스크 SVG 형식이 아닙니다');
+  fs.mkdirSync(path.join(dir, 'masks'), { recursive: true });
+  for (const ext of ['png']) fs.rmSync(path.join(dir, 'masks', `${pano}_floor.${ext}`), { force: true }); // 예전 PNG가 SVG보다 앞서지 않게
+  fs.writeFileSync(path.join(dir, 'masks', `${pano}_floor.svg`), svg);
+}
+
+// 마스크를 바꾼 뒤 바닥재 레이어를 다시 자른다(npm run pano:prep). 한 번에 하나씩
+let prepRun = Promise.resolve();
+function runPrep() {
+  prepRun = prepRun.then(
+    () =>
+      new Promise((resolve) => {
+        execFile(process.execPath, [path.join(ROOT, 'scripts', 'prep-pano.mjs')], { cwd: ROOT, timeout: 120_000 }, (err, stdout, stderr) =>
+          resolve({ ok: !err, log: `${stdout}${stderr}`.trim().split('\n').slice(-6).join('\n') }),
+        );
+      }),
+  );
+  return prepRun;
+}
+
 export function listMasks(dir = PANO_DIR) {
   const masks = {};
   let files = [];
@@ -76,12 +101,13 @@ export function listMasks(dir = PANO_DIR) {
   } catch {}
   for (const file of files.sort()) {
     const m = /^([a-z0-9_]+)\.(svg|png)$/i.exec(file);
-    if (m) masks[m[1].toLowerCase()] = `/assets/pano/masks/${encodeURIComponent(file)}`;
+    // ?v=수정 시각: 편집기로 다시 저장하면 화면이 예전 마스크를 캐시에서 쓰지 않게
+    if (m) masks[m[1].toLowerCase()] = `/assets/pano/masks/${encodeURIComponent(file)}?v=${Math.round(fs.statSync(path.join(dir, 'masks', file)).mtimeMs)}`;
   }
   return masks;
 }
 
-const PAGES = { '/': 'index.html', '/tablet': 'tablet.html', '/xr': 'xr.html' };
+const PAGES = { '/': 'index.html', '/tablet': 'tablet.html', '/xr': 'xr.html', '/mask': 'mask.html' };
 const ROLES = ['tablet', 'xr'];
 const HEARTBEAT_MS = 10_000;
 
@@ -164,6 +190,34 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
     if (pathname === '/api/panos') {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache' });
       res.end(JSON.stringify({ panos: listPanos(), layers: listLayers(), masks: listMasks() }));
+      return;
+    }
+    // 마스크 편집기 저장: 이 컴퓨터(맥북·아이맥)에서 연 편집기만 받는다
+    const maskSave = /^\/api\/masks\/([a-z0-9_]+)$/.exec(pathname);
+    if (maskSave && req.method === 'POST') {
+      const json = (code, body) => {
+        res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache' });
+        res.end(JSON.stringify(body));
+      };
+      const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+      if (!local) return json(403, { ok: false, error: '마스크는 서버를 켠 컴퓨터에서만 저장할 수 있습니다' });
+      let body = '';
+      req.setEncoding('utf8');
+      req.on('data', (chunk) => {
+        body += chunk;
+        if (body.length > 600_000) req.destroy();
+      });
+      req.on('end', async () => {
+        try {
+          saveMask(maskSave[1], body);
+          log(`바닥 영역 마스크 저장: ${maskSave[1]}_floor.svg → 레이어 다시 만드는 중`);
+          const prep = mode === 'api' ? { ok: true, log: '' } : await runPrep();
+          log(prep.ok ? '바닥재 레이어 갱신 완료' : `레이어 갱신 실패\n${prep.log}`);
+          json(200, { ok: true, prep });
+        } catch (err) {
+          json(400, { ok: false, error: err.message });
+        }
+      });
       return;
     }
     if (pathname === '/api/ui') {

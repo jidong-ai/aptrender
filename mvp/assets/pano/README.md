@@ -28,11 +28,12 @@ D5에서 렌더한 360° equirectangular 이미지를 이 폴더에 넣는다. *
 | ID | 겹치는 배경 | 렌더 조건 | 우선순위 |
 |---|---|---|---|
 | `island_b_front` | kitchen_front | 아일랜드 b(아떼 원목, 마호가니) · 900mm 지점 | 있음: 렌더 `island_b_front.jpg` + 그 렌더에서 **아일랜드만 오린 누끼** `island_b_front_cut.png`(10/16). 렌더 카메라가 kitchen_front보다 뒤에 있어서 누끼를 `CUT_PLACE`로 kitchen_front 시점에 맞춰 세운다 |
-| `floor_portland_front` | kitchen_front | 바닥 포틀랜드 모티프 · **아일랜드 없이** | **1** |
+| `floor_portland_front` | kitchen_front | 바닥 포틀랜드 모티프 · **아일랜드 없이** | 있음(10/26): 렌더 + 바닥 선택 영역으로 잘라 씀 |
 | `island_a_front` | kitchen_front | 아일랜드 a(샤인 E0 렌지대 홈바) | 2 |
 | `island_c_front` | kitchen_front | 아일랜드 c(도라 아일랜드 수납식탁) | 2 |
 | `floor_flosso_front` | kitchen_front | 바닥 플로쏘 · 아일랜드 없이 | 2 |
 | `island_b_side` | kitchen_side | 아일랜드 b 측면(안쪽 수납이 보이게) | 있음: **아일랜드만 잘라 낸 누끼**(10/14). 자리는 `scene.js`의 `CUT_PLACE`(10/16 크기 190%) |
+| `floor_portland_side` | kitchen_side | 바닥 포틀랜드 모티프 측면 · 아일랜드 없이. 파일 이름은 `floor_portland_left.png`도 됨 | 있음(10/26): 렌더 + 바닥 선택 영역으로 잘라 씀 |
 | `island_a_side` | kitchen_side | 기존 `island_a` 렌더(시나리오에는 안 씀, 보관) | – |
 
 - **체험 순서**는 아일랜드를 먼저 배치(S3)하고, 그 뒤에 바닥재를 바꾼다(S4)
@@ -48,18 +49,20 @@ D5에서 렌더한 360° equirectangular 이미지를 이 폴더에 넣는다. *
 - 웹 업로드는 한 장 25MB까지. 8K JPG 품질 80~90%면 대부분 넘지 않는다 ⚠️검증 필요
 - 8K에서 GPU가 버티지 못하면 6K(6144×3072)로 렌더해도 동작한다(아이맥에서 약간 덜 선명) ⚠️검증 필요
 
-## 바닥재 적용 영역 마스크 (Figma 펜툴)
+## 바닥재 선택 영역 (마스크 편집기 /mask)
 
-누끼(`floor_*_cut.png`)가 오기 전, 바닥재를 칠할 **영역**을 Figma에서 직접 그려 지정할 수 있다. 없으면 `scene.js`의 `FLOOR_AREA` 기본 다각형을 쓴다.
+바닥재 렌더(`floor_portland_front.png`, `floor_portland_left.png` = 측면)는 배경 렌더와 카메라가 같다. 그중 **바닥 부분만** 잘라 레이어로 쓰고, 옵션수정의 파란 '선택 영역'도 같은 모양을 쓴다. 이 영역을 직접 그린다.
 
-1. Figma에서 **가로:세로 2:1 프레임**을 만든다(예: 2048×1024). 이름은 `kitchen_front_floor`
-2. `kitchen_front.jpg`(=`pano_front.jpg`)를 프레임에 **꽉 차게**(0,0 기준, 프레임과 같은 크기) 깐다
-3. 펜툴(P)로 바닥재를 깔 영역을 따라 그리고 채우기 색을 아무 색이나 넣는다. 곡선도 된다
-4. 파노라마 이미지를 **숨기고**(눈 아이콘) 프레임을 선택 → Export → **SVG**(또는 PNG)
-5. 파일 이름 `kitchen_front_floor.svg`로 GitHub `mvp/assets/pano/masks/`에 올린다 → 맥북 `git pull` → 새로고침
+1. 서버를 켠 컴퓨터(맥북·아이맥)에서 `http://localhost:3000/mask`
+2. 장면(주방 정면·측면)을 고르고, 벽과 바닥이 만나는 선을 따라 점을 찍는다. 파노라마 아래쪽 끝은 발밑이라 바닥 전체를 칠하려면 아래 모서리까지 감싼다
+   - 클릭 점 추가 · 점 끌기 이동 · 선 위 클릭 사이에 점 넣기 · 점 더블클릭(또는 Alt+클릭) 삭제 · ⌘Z 되돌리기 · 확대 2~3배
+   - '바닥재 렌더'로 바꿔 보며 경계를 맞추고, '적용 미리보기'로 결과를 확인
+3. **저장하고 바닥재 다시 만들기** → `masks/{장면}_floor.svg`에 저장되고 바닥재 레이어를 다시 자른다(몇 초). 태블릿·아이맥 새로고침
+4. 다른 컴퓨터에도 반영하려면 저장된 `mvp/assets/pano/masks/{장면}_floor.svg`를 GitHub에 올린다('SVG 내려받기'로 받은 파일도 같음)
 
-- 화면은 이 모양 안쪽만 와이어프레임 바닥재로 칠하고, 바닥재 '칠하기' 연출도 이 영역에서 일어난다
-- 실제 바닥재 누끼(`floor_portland_front_cut.png` 등)가 들어오면 누끼가 우선이다. 누끼도 같은 방식(원본 크기 그대로, 영역 밖 투명)이라 이 마스크를 누끼 작업의 기준선으로 써도 된다
+- 저장한 마스크가 없으면 `scene.js`의 `FLOOR_AREA`(10/26 렌더 기준으로 잡은 시작값)를 쓴다
+- Figma 펜툴로 그려 내보낸 SVG·PNG(2:1 프레임, 영역 밖 투명)를 같은 이름으로 넣어도 된다. 편집기에서는 회색 그림으로만 보이고, 새로 그려 저장하면 대체된다
+- 바닥재 누끼(`floor_*_cut.png`)를 따로 만들면 누끼가 우선이다
 
 ## 카메라·노출 체크 (중요)
 
