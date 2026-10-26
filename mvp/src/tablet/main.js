@@ -514,7 +514,7 @@ function openStaff() {
   const select = h(
     'select',
     {},
-    STEPS.map((s) => h('option', { value: s.id, selected: s.id === cur }, `${s.id} · ${s.caption?.text.slice(0, 22) ?? s.hint ?? ''}`)),
+    STEPS.map((s) => h('option', { value: s.id, selected: s.id === cur }, `${s.id} · ${(s.caption?.text ?? s.guide ?? s.hint ?? '').slice(0, 22)}`)),
   );
   const neighbour = (d) => STEPS[Math.min(STEPS.length - 1, Math.max(0, stepIndex(cur) + d))].id;
   box.append(

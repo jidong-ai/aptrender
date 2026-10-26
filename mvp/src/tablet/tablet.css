@@ -2257,7 +2257,7 @@
 .guide-ui {
   position: absolute;
   left: 50%;
-  top: 176px; /* 상단 도구(94~150) 아래 */
+  top: 226px; /* 상단 도구(94~150) 아래. 10/26 50px 내림 */
   z-index: 6; /* 카드를 띄워 뒤를 흐리게 해도 보이게 */
   transform: translateX(-50%);
   display: flex;
@@ -2325,7 +2325,7 @@
 
 /* 가이드가 있으면 말풍선은 그 아래로 */
 .ui.has-guide .caption {
-  top: 252px;
+  top: 302px; /* 가이드 UI(226~)를 50px 내린 만큼 같이 */
 }
 
 /* ---------- 김민선 무드보드 (S2-1, Figma 1179:240): 카드 모양은 shared/moodboard.css ---------- */

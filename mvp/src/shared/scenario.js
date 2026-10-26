@@ -7,7 +7,7 @@
 //  say      관람객이 맡은 매니저의 대사. XR 자막으로만 나온다(고객이 듣는 말)
 //  collect  values를 모두 눌러야 넘어간다(누른 값은 flow.picks에 쌓임)
 //  target   관람객이 눌러야 할 대상. 이것만 누를 수 있다(파노라마 둘러보기는 항상 가능)
-//  hint     가이드 화살표 옆 지시문
+//  hint     가이드 화살표 옆 지시문(생략하면 말풍선 없이 강조만)
 //  values   target이 여러 값 중 하나를 고르는 경우(후보 선택)
 //  set      다음 단계로 넘어갈 때 선택 상태에 더할 값
 //  auto     이 시간(ms)이 지나면 서버가 자동으로 넘긴다
@@ -173,10 +173,9 @@ export const STEPS = [
   {
     id: 'S2-2a',
     chapter: 'kitchen',
-    guide: '치수확인을 눌러 싱크대로부터 900mm 이동동선을 확인해주세요',
+    guide: '싱크대로부터 이동 동선을 확보하려면 최소 900mm는 띄워야해요',
     say: '싱크대로부터 900mm 이동동선 확보하고 이 쪽에 한 번 배치해볼게요',
-    target: 'tool:measure',
-    hint: '치수확인',
+    target: 'tool:measure', // 지시문 말풍선 없이 화면을 어둡게 하고 치수확인 버튼만 강조
     tablet: { pano: 'kitchen_front' },
     xr: { screen: 'home' },
   },
@@ -192,7 +191,7 @@ export const STEPS = [
   {
     id: 'S2-2c',
     chapter: 'kitchen',
-    guide: '점선을 따라 체크해 주세요',
+    guide: '이 지점에 표시를 남겨 아일랜드를 배치할 위치를 알려줄게요',
     target: 'trace',
     hint: '점선을 따라 그리기',
     tablet: { pano: 'kitchen_front', dims: true, annotate: true },
@@ -202,7 +201,7 @@ export const STEPS = [
   {
     id: 'S3-1a',
     chapter: 'island',
-    guide: '무드보드 속 제품과 비슷한 소재의 아일랜드 3개를 제안해주세요.',
+    guide: '오늘의집에 등록된 상품을 불러와서 김민선 씨 취향에 어울리는 오브제를 제안해봅시다',
     target: 'nav:ohouse',
     hint: '오늘의집',
     tablet: { pano: 'kitchen_front', dims: true },
