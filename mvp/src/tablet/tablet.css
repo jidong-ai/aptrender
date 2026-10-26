@@ -1682,45 +1682,99 @@
   pointer-events: none;
 }
 
-/* ---------- 로딩 (wire) ---------- */
+/* ---------- 상담 시작 (S1, Figma 2015:5936) ----------
+   상담실 파노라마 위에 검정 50%. Figma 프레임(2264×1292)을 가운데에 두고 그 좌표 그대로(아이패드는 양옆만 조금 잘림) */
 .loading {
   position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  background: rgb(0 0 0 / 0.5);
+  animation: dim-in 0.4s ease both;
+}
+
+.loading-stage {
+  position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 620px;
-  padding: 56px 40px;
-  border-radius: 32px;
-  background: rgb(255 255 255 / 0.85);
-  text-align: center;
-  color: var(--grey-700);
+  top: 0;
+  width: 2264px;
+  height: 1292px;
+  transform: translateX(-50%);
 }
 
-.loading p {
-  margin: 28px 0 8px;
-  font-size: 28px;
-  font-weight: 700;
+/* 김민선: 오른쪽에서 헤드셋을 쓰는 모습(허리 아래는 화면 밖) */
+.loading-kim {
+  position: absolute;
+  left: 1236px;
+  top: 181px;
+  width: 639px;
+  height: 1111px;
+  animation: kim-in 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) 0.1s both;
 }
 
-.loading span {
-  font-size: 18px;
-  color: var(--grey-400);
-}
-
-.loading-ring {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto;
-  border-radius: 50%;
-  border: 6px solid var(--grey-50);
-  border-top-color: var(--blue-200);
-  animation: spin 0.9s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+@keyframes kim-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
   }
+}
+
+/* 카드: 김민선 앞(팔 일부를 가림) */
+.loading-card {
+  position: absolute;
+  left: 761px;
+  top: 396px;
+  width: 700px;
+  height: 500px;
+  border-radius: 24px;
+  background: rgb(255 255 255 / 0.8);
+  box-shadow: inset 0 0 22px rgb(255 255 255 / 0.6);
+  text-align: center;
+  animation: card-in-plain 0.45s ease 0.2s both;
+}
+
+/* 도면: Figma 자리(156, 46.5, 388×317) + 둘레 빛(100px)까지 뽑은 이미지. 불러오는 중이라 천천히 떠오르고 빛이 숨 쉰다 */
+.loading-plan {
+  position: absolute;
+  left: 56px;
+  top: -53.5px;
+  width: 588px;
+  height: 517px;
+  animation: plan-float 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes plan-float {
+  from {
+    transform: translateY(6px);
+    filter: brightness(1) drop-shadow(0 0 0 rgb(26 160 255 / 0));
+  }
+  to {
+    transform: translateY(-6px);
+    filter: brightness(1.04) drop-shadow(0 0 18px rgb(26 160 255 / 0.25));
+  }
+}
+
+.loading-card p,
+.loading-card span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.loading-card p {
+  top: 373.5px;
+  font-size: 25px;
+  font-weight: 700;
+  color: #363636;
+}
+
+.loading-card span {
+  top: 422.5px;
+  font-size: 20px;
+  font-weight: 400;
+  color: #8c8c8c;
 }
 
 /* ---------- 상담 리포트 (S5-2): 카드 모양은 shared/report.css ---------- */
@@ -2339,20 +2393,5 @@
   margin: calc(-85px * var(--k)) 0 0 calc(-150px * var(--k));
   border-radius: 50%;
   background: transparent;
-}
-
-/* ---------- 로딩: 김민선이 XR 헤드셋을 쓰는 누끼(상반신) ---------- */
-.loading-img {
-  display: block;
-  height: 320px;
-  margin: -24px auto 12px;
-  animation: headset-in 0.6s ease both;
-}
-
-@keyframes headset-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
 }
 

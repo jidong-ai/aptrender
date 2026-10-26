@@ -122,11 +122,16 @@
         <div class="card-body" id="cardBody"></div>
       </div>
 
+      <!-- 상담 시작(S1, Figma 2015:5936): 상담실 파노라마를 어둡게 하고 김민선이 헤드셋을 쓰는 모습 + 3D 도면을 불러오는 카드 -->
       <div class="loading" id="loading" hidden>
-        <img class="loading-img" src="/assets/ui/kim-headset.png" alt="XR 헤드셋을 쓰는 김민선" />
-        <div class="loading-ring"></div>
-        <p>김민선 씨 XR 헤드셋을 착용중</p>
-        <span>잠시만 기다려 주세요</span>
+        <div class="loading-stage">
+          <img class="loading-kim" src="/assets/ui/loading/kim-headset.png" alt="XR 헤드셋을 쓰는 김민선" />
+          <div class="loading-card">
+            <img class="loading-plan" src="/assets/ui/loading/kitchen-plan.png" alt="김민선 씨 집 3D 도면" />
+            <p>김민선 씨가 XR 헤드셋을 착용 중</p>
+            <span>주방 3D도면을 불러오고 있어요</span>
+          </div>
+        </div>
       </div>
 
       <div class="timer" id="timer"></div>

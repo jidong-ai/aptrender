@@ -152,7 +152,7 @@ export const STEPS = [
   {
     id: 'S1',
     chapter: 'loading',
-    guide: '김민선 씨 XR 헤드셋을 착용중',
+    guide: '김민선 씨가 XR 헤드셋을 착용 중',
     auto: 3500,
     tablet: { pano: 'counsel', panel: 'loading' },
     xr: { screen: 'boot' },
