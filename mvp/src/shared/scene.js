@@ -91,8 +91,9 @@ export const ANCHORS = {
   kitchen_front: {
     island: { yaw: -5, pitch: -20 }, // 아일랜드 누끼(CUT_PLACE.island_b_front) 가운데. 배치 연출 때 시선이 여기로
     floor: { yaw: 0, pitch: -42 },
-    // 싱크대 앞 → 900mm 떨어진 아일랜드 자리
-    dimension: { from: { yaw: -18, pitch: -28 }, to: { yaw: 2, pitch: -28 }, label: '900mm' },
+    // 싱크대 하부장 앞 모서리 → 900mm 떨어진 아일랜드 앞 왼쪽 모서리. 10/26 사용자 지정(Figma 1516:1095 빨간 선,
+    // 4096×2048 기준 (1723.5, 1369) → (1898.5, 1390.5))
+    dimension: { from: { yaw: -28.5, pitch: -30.3 }, to: { yaw: -13.1, pitch: -32.2 }, label: '900mm' },
     // 따라 그릴 체크 표시(점선). 900mm 지점 위
     check: [
       [-2.5, -21],
