@@ -3,13 +3,13 @@ import { FLOOR_AREA, LAYERS, PANOS, PLACEHOLDER_RECT, layerIdFor } from './scene
 import { FLOORS, ISLANDS } from './catalog.js';
 
 // 렌더가 없는 장면의 테스트 격자 색
-const TINTS = { store_1: '#e3ddd3', store_2: '#ddd6ca', counsel: '#d6dbe0', kitchen_front: '#e4e4e4', kitchen_side: '#dcdcdc' };
+const TINTS = { store_1: '#e3ddd3', store_2: '#ddd6ca', store_3: '#e0dace', store_4: '#d9d3c7', counsel: '#d6dbe0', kitchen_front: '#e4e4e4', kitchen_side: '#dcdcdc' };
 const ISLAND_TINT = { a: '#e8e4dc', b: '#5a2f22', c: '#b08a5e' };
 const FLOOR_WIRE = { portland: '#6f6a63', flosso: '#a39a8c' }; // 와이어프레임 바닥색(밝은 바닥 위에서도 보이게 실제보다 진하게)
 
 // 화면에 동시에 올려 두는 묶음(장). 장이 바뀌면 다른 장의 텍스처를 내린다(아이패드·아이맥 메모리 보호)
 const CHAPTERS = {
-  opening: ['store_1', 'store_2', 'counsel'],
+  opening: ['store_1', 'store_2', 'store_3', 'store_4', 'counsel'],
   main: ['kitchen_front', 'kitchen_side', ...Object.keys(LAYERS).map((id) => `layer:${id}`)],
 };
 const chapterOf = (pano) => (CHAPTERS.opening.includes(pano) ? 'opening' : 'main');

@@ -136,7 +136,7 @@ export const STEPS = [
     caption: { speaker: 'manager', text: '상담실에서 김민선 씨가 기다리고 있으니, 이제 이동해볼게요.' },
     target: 'caption-next',
     hint: '다음',
-    tablet: { pano: 'store_3', view: { yaw: -11, pitch: -3, fov: 50 } }, // 상담실로 이어지는 복도 쪽으로 확대
+    tablet: { pano: 'store_4' }, // 상담실 쪽으로 다가간 매장 렌더(store_4)
     xr: { screen: 'standby' },
   },
   {
@@ -145,7 +145,7 @@ export const STEPS = [
     caption: { speaker: 'manager', text: '캡션 안내에 따라 순서대로 상담을 진행해주세요' },
     target: 'hotspot',
     hint: '화살표를 눌러 상담실로 이동',
-    tablet: { pano: 'store_3', view: { yaw: -11, pitch: -3, fov: 50 } },
+    tablet: { pano: 'store_4' },
     xr: { screen: 'standby' },
   },
   // ---------- 1 로딩 ----------

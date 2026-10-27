@@ -141,7 +141,8 @@ test('매장: 화살표를 누르는 장면은 그 화살표가 가리키는 공
   }
   assert.equal(STEP['S0-6a'].tablet.character, 'front');
   assert.equal(STEP['S0-6b'].tablet.character, 'back');
-  assert.deepEqual(STEP['S0-6d'].tablet.view, STEP['S0-6e'].tablet.view); // 같은 복도 시야에서 이어짐
+  // 매장 렌더 배정(10/27): store1 S0-5·6a, store2 S0-6b, store3 S0-6c, store4 S0-6d·e
+  assert.deepEqual(['S0-5', 'S0-6a', 'S0-6b', 'S0-6c', 'S0-6d', 'S0-6e'].map((id) => STEP[id].tablet.pano), ['store_1', 'store_1', 'store_2', 'store_3', 'store_4', 'store_4']);
 });
 
 test('바닥재 측면 렌더를 _left 이름으로 올려도 측면 레이어로 인식', () => {

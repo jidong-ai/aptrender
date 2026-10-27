@@ -5,7 +5,8 @@
 export const PANOS = {
   store_1: { name: '위브 매장 입구' },
   store_2: { name: '위브 매장 자재 라이브러리' },
-  store_3: { name: '위브 매장 상담 구역' },
+  store_3: { name: '위브 매장 샘플 테이블' },
+  store_4: { name: '위브 매장 상담실 앞' },
   counsel: { name: '상담실' },
   kitchen_front: { name: '주방 정면', view: 'front' },
   kitchen_side: { name: '주방 측면', view: 'side' },
@@ -83,10 +84,11 @@ export function parsePanoFile(file) {
 // ---------- 공간 위 좌표(yaw·pitch, 도) ----------
 // yaw 0 = 이미지 가로 중앙, +는 오른쪽. pitch +는 위. 렌더가 오면 태블릿 HUD의 좌표 표시로 재서 바꾼다(임시값)
 export const ANCHORS = {
-  // 매장 렌더(10/8): 바닥 화살표는 다음 공간 쪽 통로 바닥. 사람·가구와 겹치지 않는 자리
-  store_1: { hotspot: { yaw: 8, pitch: -22, to: 'store_2', label: '안쪽으로' } },
-  store_2: { hotspot: { yaw: -6, pitch: -24, to: 'store_3', label: '안쪽으로' } },
-  store_3: { hotspot: { yaw: -11, pitch: -11, to: 'counsel', label: '상담실로' } }, // 복도 입구 바닥(S0-6d·e에서 복도 쪽으로 확대한 시야 안)
+  // 매장 렌더(10/27 교체): 바닥 화살표는 다음 공간 쪽 통로 바닥. 사람·가구, 왼쪽 매니저 캐릭터와 겹치지 않는 자리
+  store_1: { hotspot: { yaw: 6, pitch: -26, to: 'store_2', label: '안쪽으로' } },
+  store_2: { hotspot: { yaw: 10, pitch: -26, to: 'store_3', label: '안쪽으로' } },
+  store_3: {}, // S0-6c는 '캡션 다음'으로 넘어가 화살표가 없다
+  store_4: { hotspot: { yaw: -7, pitch: -18, to: 'counsel', label: '상담실로' } }, // 가운데 상담실 복도 입구 바닥
   counsel: {},
   kitchen_front: {
     island: { yaw: -5, pitch: -20 }, // 아일랜드 누끼(CUT_PLACE.island_b_front) 가운데. 배치 연출 때 시선이 여기로
