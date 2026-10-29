@@ -19,6 +19,7 @@ import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, m
 import { MOODBOARD_TAGS, renderMoodboardCard } from '../shared/moodboard.js';
 import { renderReportCard } from '../shared/report.js';
 import { effectiveAuto } from '../shared/voice.js';
+import { createAudio } from '../shared/audio.js';
 
 const VIEW_SEND_MS = 100; // managerView 10Hz
 const FRAME_H = 1292; // Figma 매니저 프레임 높이
@@ -497,12 +498,26 @@ sync.on('snapshot', (state, msg) => {
   lastSent = '';
   queueView();
 });
+// ---------- 소리: 매니저 목소리는 체험자 손 안(아이패드)에서. 김민선 목소리·BGM은 아이맥(src/shared/audio.js) ----------
+const audio = createAudio({ serverNow: () => sync.serverNow(), roles: ['manager'], log: hud.log });
+let audioAt = null; // 지금 소리를 낸 단계(단계 id@들어간 시각)
+const replayStep = () => latest && audio.enterStep(latest.flow.step, latest.flow.enteredAt);
+// iPad Safari는 손을 뗄 때(touchend·click)만 소리를 허용한다. 첫 탭(시작 버튼)에서 켜진다
+for (const type of ['pointerup', 'touchend', 'click', 'keydown']) addEventListener(type, () => audio.unlocked || audio.unlock(), true);
+audio.ctx.addEventListener('statechange', () => audio.unlocked && replayStep()); // 막혀 있던 동안 지난 만큼 건너뛰고 이어서
+audio.preload().then(replayStep);
+
 sync.on('state', (state) => {
   latest = state;
+  // 같은 단계로 다시 들어온 경우(직원 jump)도 처음부터 다시 읽는다
+  if (`${state.flow.step}@${state.flow.enteredAt}` !== audioAt) {
+    audioAt = `${state.flow.step}@${state.flow.enteredAt}`;
+    audio.enterStep(state.flow.step, state.flow.enteredAt);
+  }
   render(state);
 });
 sync.on('info', ({ status }) => document.body.classList.toggle('is-offline', status !== 'online'));
-window.__weave = { viewer, sync, get state() { return latest; }, check: CHECK }; // 자동 테스트·디버그용
+window.__weave = { viewer, sync, audio, get state() { return latest; }, check: CHECK }; // 자동 테스트·디버그용
 
 // ---------- 직원 메뉴: 왼쪽 위 2초 길게 누르기 ----------
 let pressTimer = 0;

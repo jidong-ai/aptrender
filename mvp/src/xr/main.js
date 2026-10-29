@@ -18,7 +18,7 @@ import { createManagerFrame } from './manager-frame.js';
 import { MOODBOARD_TAGS, renderMoodboardCard } from '../shared/moodboard.js';
 import { renderReportCard } from '../shared/report.js';
 import { effectiveAuto } from '../shared/voice.js';
-import { createAudio } from './audio.js';
+import { createAudio } from '../shared/audio.js';
 
 const STAGE_W = 1920;
 const STAGE_H = 1080;
@@ -47,8 +47,8 @@ const hud = mountHud(sync, {
   hints: 'F 전체화면 · H 표시 숨김 · G 방위 격자 · S 흔들림 · D 5초 끊기 · R 처음으로 · ←/→ 단계 이동 · M 음소거 · [ ] 볼륨 · 드래그 둘러보기',
 });
 
-// ---------- 소리: 음성 가이드 + BGM (src/xr/audio.js) ----------
-const audio = createAudio({ serverNow: () => sync.serverNow(), log: hud.log });
+// ---------- 소리: 김민선 목소리 + BGM (매니저 목소리는 태블릿에서, src/shared/audio.js) ----------
+const audio = createAudio({ serverNow: () => sync.serverNow(), roles: ['customer'], withBgm: true, log: hud.log });
 // 브라우저는 첫 조작 전에는 소리를 막는다. 운영자가 아이맥에서 F(전체화면)나 클릭을 한 번 하면 켜진다
 const soundBadge = el('div', 'sound-badge', '소리 꺼짐 · 아무 키나 누르면 켜져요');
 document.body.append(soundBadge);

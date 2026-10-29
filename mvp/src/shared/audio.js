@@ -1,8 +1,11 @@
-// 아이맥(XR) 화면의 소리: 단계마다 음성 가이드, 뒤에 깔리는 BGM.
+// 음성 가이드·BGM 재생. 목소리마다 나는 기기가 다르다(체험자와 고객 사이 거리감):
+//  - 태블릿(아이패드): 매니저 목소리 — 체험자 손 안에서
+//  - XR(아이맥): 김민선 목소리 + BGM — 고객 쪽 스피커에서
 // 진행은 서버가 쥐고, 여기서는 단계가 바뀌는 순간 그 단계의 음성을 튼다(미리 디코딩해 지연 없음).
+// 줄마다 시작 시각은 manifest 길이로 정해져 두 기기가 따로 계산해도 맞물린다(voiceTimeline).
 // 재생 위치 = 서버 시각 - 단계에 들어간 시각 → 새로고침·재접속해도 같은 지점부터 이어진다
-import { STEP } from '../shared/scenario.js';
-import { bgmFor, voiceTimeline } from '../shared/voice.js';
+import { STEP } from './scenario.js';
+import { bgmFor, voiceLines, voiceTimeline } from './voice.js';
 
 const BGM_LEVEL = 0.35; // 음성이 없을 때
 const BGM_DUCK = 0.12; // 음성이 나오는 동안
@@ -26,7 +29,25 @@ const store = {
   },
 };
 
-export function createAudio({ serverNow, log = () => {} }) {
+// 줄 key(단계-번호) → 목소리. 대사 목록에서 찾는다
+const roleCache = new Map();
+function roleOf(key) {
+  if (!roleCache.has(key)) {
+    const stepId = key.replace(/-\d+$/, '');
+    for (const l of voiceLines(stepId)) roleCache.set(l.key, l.role);
+  }
+  return roleCache.get(key);
+}
+
+/**
+ * roles: 이 기기에서 낼 목소리(['manager'] | ['customer'])
+ * withBgm: BGM을 이 기기에서 낼지. 다른 기기의 음성이 나오는 동안에도 BGM을 낮춘다
+ */
+export function createAudio({ serverNow, roles, withBgm = false, log = () => {} }) {
+  // iPad Safari: 무음 스위치를 켜 둬도 소리가 나게(지원하는 버전만)
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = 'playback';
+  } catch {}
   const ctx = new AudioContext();
   const master = ctx.createGain();
   const voiceBus = ctx.createGain();
@@ -63,10 +84,10 @@ export function createAudio({ serverNow, log = () => {} }) {
     } catch {
       return manifest;
     }
-    await Promise.all(Object.values(manifest.bgm).map((b) => load(b.url)));
-    await Promise.all(Object.values(manifest.voice).map((v) => load(v.url)));
-    const n = Object.values(manifest.voice).filter((v) => buffers.has(v.url)).length;
-    log(`소리 준비: 음성 ${n}/${Object.keys(manifest.voice).length} · BGM ${Object.values(manifest.bgm).filter((b) => buffers.has(b.url)).length}`);
+    if (withBgm) await Promise.all(Object.values(manifest.bgm).map((b) => load(b.url)));
+    const mine = Object.entries(manifest.voice).filter(([key, v]) => roles.includes(roleOf(key)) && v.url);
+    await Promise.all(mine.map(([, v]) => load(v.url)));
+    log(`소리 준비(${roles.join('·')}): 음성 ${mine.filter(([, v]) => buffers.has(v.url)).length}/${mine.length}${withBgm ? ` · BGM ${Object.values(manifest.bgm).filter((b) => buffers.has(b.url)).length}` : ''}`);
     return manifest;
   }
 
@@ -98,6 +119,7 @@ export function createAudio({ serverNow, log = () => {} }) {
   }
 
   function setBgm(name, idle) {
+    if (!withBgm) return;
     if (bgm?.name === name) {
       if (bgm.idle !== idle) {
         bgm.idle = idle;
@@ -134,11 +156,13 @@ export function createAudio({ serverNow, log = () => {} }) {
     const now = ctx.currentTime;
     for (const { key, at, ms } of voiceTimeline(step, manifest)) {
       if (offset >= at + ms) continue; // 이미 끝난 줄
+      const startIn = Math.max(0, at - offset) / 1000;
+      // 다른 기기가 내는 줄이어도 BGM은 낮춘다(줄 시작 시각이 두 기기에서 같다)
+      duckUntil = Math.max(duckUntil, now + startIn + (ms - Math.max(0, offset - at)) / 1000);
+      if (!roles.includes(roleOf(key))) continue;
       const buf = buffers.get(manifest.voice[key]?.url);
       history.push({ key, offsetMs: Math.round(Math.max(0, offset - at)), silent: !buf, at: Date.now() });
       if (history.length > 100) history.shift();
-      const startIn = Math.max(0, at - offset) / 1000;
-      duckUntil = Math.max(duckUntil, now + startIn + (ms - Math.max(0, offset - at)) / 1000);
       if (!buf) continue; // --dry 추정치: 길이만 있고 소리 없음
       const src = ctx.createBufferSource();
       src.buffer = buf;
