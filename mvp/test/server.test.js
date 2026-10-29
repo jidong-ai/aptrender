@@ -4,12 +4,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import WebSocket from 'ws';
-import { listLayers, listPanos, startServer } from '../server/app.js';
+import { listAudio, listLayers, listPanos, startServer } from '../server/app.js';
 import { CUT_PLACE, placedRect } from '../src/shared/scene.js';
 
 let server;
+// 음성 manifest가 없는 빈 폴더: 자동 진행 시간이 시나리오 러닝타임 그대로
+const NO_AUDIO = fs.mkdtempSync(path.join(os.tmpdir(), 'weave-noaudio-'));
 before(async () => {
-  server = await startServer({ port: 0, mode: 'api', quiet: true });
+  server = await startServer({ port: 0, mode: 'api', quiet: true, audioDir: NO_AUDIO });
 });
 after(() => server.close());
 
@@ -234,4 +236,45 @@ test('바닥 영역 마스크: 편집기 SVG를 저장하고 다시 읽는다, �
   assert.throws(() => saveMask('kitchen_side', '<svg><script>alert(1)</script></svg>', dir), /형식/);
   assert.throws(() => saveMask('nope', maskSvg(pts), dir), /장면/);
   fs.rmSync(dir, { recursive: true });
+});
+
+test('음성 목록: 길이는 추정치(--dry)도 넘기고, url은 파일이 있을 때만', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'weave-audio-'));
+  assert.deepEqual(listAudio(dir), { voice: {}, bgm: {} });
+  fs.mkdirSync(path.join(dir, 'voice'));
+  fs.writeFileSync(path.join(dir, 'voice', 'S0-1-1.mp3'), '');
+  fs.writeFileSync(
+    path.join(dir, 'manifest.json'),
+    JSON.stringify({
+      voice: { 'S0-1-1': { file: 'voice/S0-1-1.mp3', ms: 4200, hash: 'abcdef1234' }, 'S0-2-1': { ms: 5000, dry: true }, broken: { file: 'x.mp3' } },
+      bgm: { intro: { file: 'bgm/intro.mp3', ms: 90000, hash: 'ff' } },
+    }),
+  );
+  const a = listAudio(dir);
+  assert.deepEqual(a.voice['S0-1-1'], { ms: 4200, url: '/assets/audio/voice/S0-1-1.mp3?v=abcdef12' });
+  assert.deepEqual(a.voice['S0-2-1'], { ms: 5000, url: null });
+  assert.equal(a.voice.broken, undefined);
+  assert.deepEqual(a.bgm.intro, { ms: 90000, url: null }); // 파일 없음
+});
+
+test('음성이 러닝타임보다 길면 자동 진행이 음성이 끝날 때까지 기다린다', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'weave-audio-'));
+  fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ voice: { 'S1-1': { ms: 4300, dry: true } } }));
+  const s2 = await startServer({ port: 0, mode: 'api', quiet: true, audioDir: dir });
+  const res = await fetch(`http://localhost:${s2.port}/api/audio`);
+  assert.deepEqual((await res.json()).voice['S1-1'], { ms: 4300, url: null });
+  const ws = new WebSocket(`ws://localhost:${s2.port}/ws?role=tablet`);
+  const flows = [];
+  ws.on('message', (d) => {
+    const m = JSON.parse(d);
+    if (m.type === 'flow') flows.push({ step: m.flow.step, t: Date.now() });
+  });
+  await new Promise((r) => ws.once('open', r));
+  const t0 = Date.now();
+  ws.send(JSON.stringify({ type: 'jump', step: 'S1' }));
+  while (!flows.length && Date.now() - t0 < 8000) await new Promise((r) => setTimeout(r, 50));
+  assert.equal(flows[0]?.step, 'S2-1');
+  assert.ok(flows[0].t - t0 >= 4300 + 700 - 100, `${flows[0].t - t0}ms에 넘어감(러닝타임 3.5초가 아니라 음성 4.3초 + 0.7초)`);
+  ws.close();
+  await s2.close();
 });

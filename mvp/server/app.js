@@ -16,12 +16,14 @@ import { CUT_PLACE, PANOS, parsePanoFile, placedRect } from '../src/shared/scene
 import { isSafeMaskSvg } from '../src/shared/floor-mask.js';
 import { execFile } from 'node:child_process';
 import { STAT_KEYS, STEP, clearsStrokes, jumpFlow, nextStep } from '../src/shared/scenario.js';
+import { effectiveAuto } from '../src/shared/voice.js';
 import { getLanAddresses } from './lan.js';
 
 export const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DIST = path.join(ROOT, 'dist');
 const ASSETS = path.join(ROOT, 'assets');
 const PANO_DIR = path.join(ASSETS, 'pano');
+const AUDIO_DIR = path.join(ASSETS, 'audio');
 
 // assets/pano(원본)와 assets/pano/built(pano:prep 결과)를 훑어 실제로 있는 파노라마 목록을 만든다.
 // 이름 규칙은 src/shared/scene.js. 같은 장면·크기가 여럿이면 built의 JPG → 원본 JPG → PNG 순으로 쓴다.
@@ -67,6 +69,25 @@ export function listLayers(dir = PANO_DIR) {
     if (Object.keys(files).length) layers[key] = { kind: layer.kind, rect, files };
   }
   return layers;
+}
+
+// 음성 가이드·BGM 목록(npm run audio:gen이 만든 assets/audio/manifest.json).
+// 길이(ms)는 파일이 없어도(--dry 추정치) 넘겨 자동 진행 시간에 쓰고, url은 파일이 실제로 있을 때만 붙인다
+export function listAudio(dir = AUDIO_DIR) {
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+  } catch {
+    return { voice: {}, bgm: {} };
+  }
+  const entry = (e) => {
+    if (!e || typeof e.ms !== 'number') return null;
+    const ok = e.file && fs.existsSync(path.join(dir, e.file));
+    // ?v=해시: 다시 만들면 브라우저가 예전 파일을 캐시에서 쓰지 않게
+    return { ms: e.ms, url: ok ? `/assets/audio/${e.file.split('/').map(encodeURIComponent).join('/')}?v=${String(e.hash ?? '').slice(0, 8)}` : null };
+  };
+  const pick = (obj) => Object.fromEntries(Object.entries(obj ?? {}).map(([k, e]) => [k, entry(e)]).filter(([, e]) => e));
+  return { voice: pick(manifest.voice), bgm: pick(manifest.bgm) };
 }
 
 // 바닥재 적용 영역 마스크(Figma 펜툴로 그려 내보낸 파일): assets/pano/masks/{장면}_floor.svg|png
@@ -120,7 +141,7 @@ const CLOSE_REASONS = { 1000: '정상 종료', 1001: '페이지 닫힘', 1005: '
  *  - 'prod' : `npm run build` 결과(dist/)를 그대로 서빙. 전시용
  *  - 'api'  : 페이지 없이 WebSocket만 (테스트용)
  */
-export async function startServer({ port = 3000, mode = 'dev', quiet = false } = {}) {
+export async function startServer({ port = 3000, mode = 'dev', quiet = false, audioDir = AUDIO_DIR } = {}) {
   const log = quiet ? () => {} : (...args) => console.log(`[${time()}]`, ...args);
 
   // ---------- 상태 (서버가 단일 진실) ----------
@@ -190,6 +211,11 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
     if (pathname === '/api/panos') {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache' });
       res.end(JSON.stringify({ panos: listPanos(), layers: listLayers(), masks: listMasks() }));
+      return;
+    }
+    if (pathname === '/api/audio') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache' });
+      res.end(JSON.stringify(listAudio(audioDir)));
       return;
     }
     // 마스크 편집기 저장: 이 컴퓨터(맥북·아이맥)에서 연 편집기만 받는다
@@ -278,13 +304,14 @@ export async function startServer({ port = 3000, mode = 'dev', quiet = false } =
   };
 
   // ---------- 가이드 플로우 ----------
-  // 자동으로 넘어가는 단계(로딩·엔딩)는 서버가 시간을 잰다. 재접속해도 같은 시점에 넘어간다
+  // 자동으로 넘어가는 단계(로딩·엔딩)는 서버가 시간을 잰다. 재접속해도 같은 시점에 넘어간다.
+  // 음성 가이드가 러닝타임보다 길면 음성이 끝날 때까지 기다린다(manifest는 매번 읽어 다시 만들어도 바로 반영)
   let autoTimer = 0;
   function armAuto() {
     clearTimeout(autoTimer);
     const step = STEP[state.flow.step];
     if (!step.auto) return;
-    const wait = Math.max(0, state.flow.enteredAt + step.auto - Date.now());
+    const wait = Math.max(0, state.flow.enteredAt + effectiveAuto(step, listAudio(audioDir)) - Date.now());
     const from = step.id;
     autoTimer = setTimeout(() => advance(null, { from, action: 'auto' }), wait);
   }

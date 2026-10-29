@@ -3,6 +3,9 @@ dist/
 .DS_Store
 *.log
 
+# ElevenLabs 키 등 비밀 값. .env.example을 복사해 쓴다
+.env
+
 # 파노라마: 압축본(JPG)과 누끼(_cut.png)만 git에 올린다.
 # 원본 PNG(용량 큼)와 npm run pano:prep 결과(built/, 언제든 다시 만들 수 있음)는 올리지 않는다
 assets/pano/*.png

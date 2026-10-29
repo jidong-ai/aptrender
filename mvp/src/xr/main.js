@@ -17,6 +17,8 @@ import { wrapYaw } from '../shared/angles.js';
 import { createManagerFrame } from './manager-frame.js';
 import { MOODBOARD_TAGS, renderMoodboardCard } from '../shared/moodboard.js';
 import { renderReportCard } from '../shared/report.js';
+import { effectiveAuto } from '../shared/voice.js';
+import { createAudio } from './audio.js';
 
 const STAGE_W = 1920;
 const STAGE_H = 1080;
@@ -40,9 +42,32 @@ const hud = mountHud(sync, {
     if (!latest || !player) return [];
     const p = player.parts;
     const parts = ['base', 'island', 'floor'].filter((k) => p[k]).map((k) => `${k} ${PART_TEXT[p[k]]}`);
-    return [`단계 ${latest.flow.step} · ${PANOS[player.current?.pano]?.name ?? '대기'} · ${parts.join(' · ')}`, `흔들림 ${swayOn ? '켬' : '끔'}`];
+    return [`단계 ${latest.flow.step} · ${PANOS[player.current?.pano]?.name ?? '대기'} · ${parts.join(' · ')}`, `흔들림 ${swayOn ? '켬' : '끔'} · ${audio.status}`];
   },
-  hints: 'F 전체화면 · H 표시 숨김 · G 방위 격자 · S 흔들림 · D 5초 끊기 · R 처음으로 · ←/→ 단계 이동 · 드래그 둘러보기',
+  hints: 'F 전체화면 · H 표시 숨김 · G 방위 격자 · S 흔들림 · D 5초 끊기 · R 처음으로 · ←/→ 단계 이동 · M 음소거 · [ ] 볼륨 · 드래그 둘러보기',
+});
+
+// ---------- 소리: 음성 가이드 + BGM (src/xr/audio.js) ----------
+const audio = createAudio({ serverNow: () => sync.serverNow(), log: hud.log });
+// 브라우저는 첫 조작 전에는 소리를 막는다. 운영자가 아이맥에서 F(전체화면)나 클릭을 한 번 하면 켜진다
+const soundBadge = el('div', 'sound-badge', '소리 꺼짐 · 아무 키나 누르면 켜져요');
+document.body.append(soundBadge);
+let audioAt = null; // 지금 소리를 낸 단계(단계 id@들어간 시각)
+const replayStep = () => latest && audio.enterStep(latest.flow.step, latest.flow.enteredAt);
+const unlockAudio = () => {
+  if (!audio.unlocked) audio.unlock();
+};
+addEventListener('keydown', unlockAudio, true);
+addEventListener('pointerdown', unlockAudio, true);
+audio.ctx.addEventListener('statechange', () => {
+  soundBadge.hidden = audio.unlocked;
+  if (audio.unlocked) replayStep(); // 막혀 있던 동안 지난 만큼 건너뛰고 이어서
+  hud.render();
+});
+soundBadge.hidden = audio.unlocked;
+audio.preload().then(() => {
+  replayStep(); // 미리 불러오는 동안 지나간 단계도 소리가 나게
+  hud.render();
 });
 document.body.classList.toggle('show-guides', !hud.el.hidden);
 
@@ -207,7 +232,7 @@ function renderOffer(step, flow, stepChanged) {
   // 고르는 손(김민선)
   const hand = el('span', 'offer-hand');
   box.append(head, row, hand);
-  if (step.xr.choose && stepChanged) playChoose(row, hand, keys, step.xr.choose, step.auto);
+  if (step.xr.choose && stepChanged) playChoose(row, hand, keys, step.xr.choose, effectiveAuto(step, audio.manifest));
 }
 
 /** 김민선이 카드를 하나씩 살펴보다가 고르는 장면. 단계 시간(ms) 안에 고른 카드가 1.7초 이상 보이게 */
@@ -284,6 +309,11 @@ function onState(state) {
   const stepChanged = flow.step !== lastStep;
   lastStep = flow.step;
   const screen = step.xr.screen;
+  // 같은 단계로 다시 들어온 경우(직원 jump)도 처음부터 다시 읽는다
+  if (`${flow.step}@${flow.enteredAt}` !== audioAt) {
+    audioAt = `${flow.step}@${flow.enteredAt}`;
+    audio.enterStep(flow.step, flow.enteredAt);
+  }
   const inHome = screen === 'home' || screen === 'ending';
 
   $('standby').hidden = screen !== 'standby';
@@ -347,7 +377,7 @@ setInterval(() => {
   xrTime.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }, 250);
 
-window.__weave = { viewer, sync, get state() { return latest; } }; // 자동 테스트·디버그용
+window.__weave = { viewer, sync, audio, get state() { return latest; } }; // 자동 테스트·디버그용
 
 // ---------- 화면 맞춤 ----------
 function fitStage() {
@@ -390,6 +420,15 @@ addEventListener('keydown', (e) => {
       break;
     case 'arrowright':
       jump(1);
+      break;
+    case 'm':
+      audio.toggleMute();
+      hud.render();
+      break;
+    case '[':
+    case ']':
+      audio.nudgeVolume(e.key === ']' ? 0.1 : -0.1);
+      hud.render();
       break;
   }
 });

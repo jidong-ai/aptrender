@@ -141,6 +141,8 @@ XR 서비스의 "스캔한 공간은 그대로, 그 위에 오브제·자재를 
 | `D` | 5초간 연결 끊기 (재접속 테스트) |
 | `R` | 처음으로(리셋) |
 | `←` `→` | 이전·다음 단계로 이동(직원용) |
+| `M` | 음소거 켜기/끄기 |
+| `[` `]` | 볼륨 10%씩 내리기/올리기(아이맥에 기억됨) |
 | 마우스 드래그·휠 | 둘러보기·확대 (테스트용. 전시 때는 아무도 조작하지 않음) |
 
 - 화면은 **1920×1080(16:9) 기준 무대**로 그린다. 맥북(16:10)에서는 위아래에 여백이 생기고, 점선 안쪽이 아이맥에서 보일 범위다.
@@ -151,6 +153,34 @@ XR 서비스의 "스캔한 공간은 그대로, 그 위에 오브제·자재를 
   ```
 
   `?hud=0`은 디버그 표시를 숨긴 채로 시작한다. ⚠️검증 필요(Chrome 버전에 따라 kiosk 동작이 다를 수 있음)
+- **소리**: 음성 가이드와 BGM은 아이맥(XR 화면)에서만 난다. 브라우저는 첫 조작 전에는 소리를 막으므로, 화면을 연 뒤 `F`(전체화면)나 클릭을 **한 번** 해야 켜진다. 그 전까지 오른쪽 아래에 '소리 꺼짐' 표시가 뜬다. kiosk로 띄울 때 `--autoplay-policy=no-user-gesture-required`를 붙이면 조작 없이 바로 나온다 ⚠️검증 필요
+
+## 3-1. 음성 가이드·BGM 만들기 (ElevenLabs, 맥북에서)
+
+대사는 `src/shared/scenario.js`의 화면 문구에서 자동으로 뽑는다(어떤 줄을 누가 읽는지: `docs/SCENARIO.md`의 '음성' 열).
+
+1. `mvp/.env.example`을 복사해 `mvp/.env`로 저장하고 값을 채운다(이 파일은 git에 올라가지 않는다)
+   - `ELEVENLABS_API_KEY`: ElevenLabs → API Keys (권한: Text to Speech, Music Generation)
+   - `VOICE_MANAGER`, `VOICE_CUSTOMER`: Voice Library에서 고른 목소리의 Voice ID
+2. 처음 한 번(음성 + BGM 2곡):
+   ```bash
+   cd ~/Desktop/aptrender/mvp
+   npm run audio:gen -- --bgm
+   ```
+3. 서버를 켠 채로 아이맥 화면을 새로고침해 들어 본다
+4. 마음에 들면 올린다: `git add assets/audio && git commit -m "음성·BGM" && git push`
+
+| 이럴 때 | 명령 |
+|---|---|
+| 화면 문구를 고쳤다 | `npm run audio:gen` (바뀐 줄만 다시) |
+| 특정 단계만 다시 녹음 | `npm run audio:gen -- --only=S0-1,S2-1` |
+| 목소리를 바꿨다(.env의 Voice ID) | `npm run audio:gen -- --force` |
+| BGM 분위기를 바꾸고 싶다 | `scripts/gen-audio.mjs` 위쪽 `BGM` 프롬프트를 고친 뒤 `npm run audio:gen -- --bgm` |
+| 발음이 이상하다(예: 영어·숫자) | `src/shared/voice.js`의 `PRONOUNCE`에 바꿀 말을 넣고 `npm run audio:gen` |
+
+- **싱크**: 단계에 들어가는 순간 그 단계 음성을 튼다. 프롤로그·로딩처럼 자동으로 넘어가는 단계는 음성이 끝나고 0.7초 뒤에 넘어간다(정해 둔 러닝타임보다 길 때). 말풍선을 일찍 누르면 이전 음성은 끊긴다
+- **BGM**: 시작화면~매장은 intro, 상담실(S1)부터 consult. 음성이 나오는 동안 BGM이 작아진다
+- 키 없이 싱크만 시험: `npm run audio:gen -- --dry` (글자 수로 길이만 추정, 소리 없음. 실제로 만든 음성은 건드리지 않는다)
 
 ## 4. 아이패드 접속 방법
 

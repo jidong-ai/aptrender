@@ -17,6 +17,7 @@
 //  countdown 프롤로그 마지막 장: auto까지 남은 초를 '5초 뒤 체험이 시작됩니다'로 보여 준다
 //  next     다음 단계 id(생략하면 바로 다음). 'reset'이면 처음으로. 값마다 갈 곳이 다르면 { 값: id }
 //  copy     프롤로그 본문(캡션 말풍선 없이 화면 가운데 큰 글씨)
+//  voice    음성 가이드에서 읽을 줄 덮어쓰기(src/shared/voice.js): false = 안 읽음, { say: false } = say만 안 읽음
 //  dim      대상 외 화면을 어둡게 할지. 생략하면 작은 메뉴 버튼(tool:·nav:·category:)만 어둡게 한다
 //  clearStrokes  다음 단계로 넘어갈 때 주석을 지운다
 //  tablet   태블릿 화면: screen('start'|'prologue'|'pano'|'report'|'outro'), pano, panel(가운데 카드), annotate, dims
@@ -175,6 +176,7 @@ export const STEPS = [
     chapter: 'kitchen',
     guide: '싱크대로부터 이동 동선을 확보하려면 최소 900mm는 띄워야해요',
     say: '싱크대로부터 900mm 이동동선 확보하고 이 쪽에 한 번 배치해볼게요',
+    voice: { say: false }, // 가이드 문구와 내용이 겹쳐 가이드만 읽는다
     target: 'tool:measure', // 지시문 말풍선 없이 화면을 어둡게 하고 치수확인 버튼만 강조
     tablet: { pano: 'kitchen_front' },
     xr: { screen: 'home' },
@@ -232,6 +234,7 @@ export const STEPS = [
     id: 'S3-2a',
     chapter: 'island',
     guide: '김민선 씨가 고르는 중', // 뒤에 점(…)이 흐른다
+    voice: false, // 고르는 장면은 음성 없이
     auto: 6500, // XR에서 김민선이 카드 중 b를 고르는 장면이 재생된다
     set: () => ({ island: 'b' }),
     clearStrokes: true, // 아일랜드를 놓으면 900mm 체크 표시는 역할을 다했으므로 지운다
@@ -300,6 +303,7 @@ export const STEPS = [
     id: 'S4-3a',
     chapter: 'floor',
     guide: '김민선 씨가 고르는 중', // 뒤에 점(…)이 흐른다
+    voice: false, // 고르는 장면은 음성 없이
     auto: 6000, // XR에서 김민선이 바닥재 카드 2개 중 a(포틀랜드 모티프)를 고르는 장면
     set: () => ({ floor: 'portland' }),
     tablet: { pano: 'kitchen_side', waiting: true },

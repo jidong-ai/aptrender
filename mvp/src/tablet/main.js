@@ -18,6 +18,7 @@ import { coverage, createAnnotator } from './annotate.js';
 import { buildAnnotateBar, buildCardHead, buildNav, buildTimer, buildTools, h, mmss, renderOptionEditor, renderPanel } from './ui.js';
 import { MOODBOARD_TAGS, renderMoodboardCard } from '../shared/moodboard.js';
 import { renderReportCard } from '../shared/report.js';
+import { effectiveAuto } from '../shared/voice.js';
 
 const VIEW_SEND_MS = 100; // managerView 10Hz
 const FRAME_H = 1292; // Figma 매니저 프레임 높이
@@ -43,6 +44,12 @@ await loadUiAssets();
 
 const viewer = new PanoViewer($('view'), { fov: { v: 75 }, fovRange: [35, 100] });
 const sync = createSync({ role: 'tablet' });
+// 음성 길이(소리는 아이맥에서만 난다). 자동으로 넘어가는 단계가 음성만큼 길어지므로 카운트다운도 그 기준
+let audioManifest = null;
+fetch('/api/audio')
+  .then((r) => r.json())
+  .then((m) => (audioManifest = m))
+  .catch(() => {});
 let latest = null;
 let player = null;
 const hud = mountHud(sync, {
@@ -321,7 +328,7 @@ function render(state) {
   clearInterval(countTimer);
   if (screen === 'prologue' && step.countdown) {
     const tickCount = () => {
-      const left = Math.ceil((step.auto - (sync.serverNow() - flow.enteredAt)) / 1000);
+      const left = Math.ceil((effectiveAuto(step, audioManifest) - (sync.serverNow() - flow.enteredAt)) / 1000);
       $('proCountNum').textContent = String(Math.min(step.auto / 1000, Math.max(1, left)));
     };
     tickCount();

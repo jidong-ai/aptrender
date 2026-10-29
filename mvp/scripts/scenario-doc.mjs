@@ -1,6 +1,7 @@
 // docs/SCENARIO.md(단계표)를 src/shared/scenario.js에서 다시 만든다.  실행: npm run docs:scenario
 import fs from 'node:fs';
 import { SPEAKERS, STEPS } from '../src/shared/scenario.js';
+import { voiceLines } from '../src/shared/voice.js';
 
 const TARGET = {
   start: "CTA '상담 플로우 체험하기'",
@@ -53,7 +54,8 @@ const rows = STEPS.map((s) => {
     s.say && `자막(매니저): ${esc(s.say)}`,
     s.caption?.speaker === 'customer' && s.xr.screen === 'home' && '자막(김민선)',
   ].filter(Boolean).join(' · ');
-  return `| ${s.id} | ${tablet} | ${guide} | ${caption} | ${next} | ${xr} |`;
+  const voice = voiceLines(s).map((l) => SPEAKERS[l.role]).join(' → ') || '—';
+  return `| ${s.id} | ${tablet} | ${guide} | ${caption} | ${next} | ${xr} | ${voice} |`;
 });
 
 const md = `# 체험 단계표 (게임형 가이드 플로우)
@@ -68,9 +70,10 @@ const md = `# 체험 단계표 (게임형 가이드 플로우)
 - "다음 조건"의 대상만 누를 수 있다. 다른 버튼은 막히고 대상이 흔들린다. 파노라마 드래그는 항상 허용
 - 선택 결과(아일랜드·바닥재)는 \`flow.choices\`에 쌓이고 XR 장면·예상 금액에 반영된다
 - 직원 메뉴(태블릿 왼쪽 위 2초 길게 누르기)·아이맥 ←/→ 키로 아무 단계나 바로 갈 수 있다
+- **음성**은 아이맥에서만 난다(\`src/shared/voice.js\`). 단계에 들어가면 말풍선 → 프롤로그 본문 → 가이드 UI 중 하나를 읽고, 이어서 매니저 대사(say)를 읽는다. 바로 앞과 같은 가이드는 다시 읽지 않는다. 자동으로 넘어가는 단계는 음성이 끝나고 0.7초 뒤에 넘어간다(러닝타임보다 길 때)
 
-| ID | 태블릿 화면 | 가이드 UI | 말풍선 | 다음 조건 → 선택 | XR |
-|---|---|---|---|---|---|
+| ID | 태블릿 화면 | 가이드 UI | 말풍선 | 다음 조건 → 선택 | XR | 음성 |
+|---|---|---|---|---|---|---|
 ${rows.join('\n')}
 
 ## 아직 정하지 않은 것
