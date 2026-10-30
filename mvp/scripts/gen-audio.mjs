@@ -5,6 +5,7 @@
 //   npm run audio:gen -- --force   모든 대사를 다시 만든다(목소리를 바꿨을 때)
 //   npm run audio:gen -- --only=S0-1,S2-1   해당 단계만 다시 만든다
 //   npm run audio:gen -- --dry     키 없이 글자 수로 길이만 추정해 manifest를 쓴다(싱크 테스트용, 소리 없음)
+//   npm run audio:gen -- --check   지금 만들어진 음성·BGM 상태만 보여 준다(API 호출 없음)
 //
 // 결과: assets/audio/voice/{단계}-{n}.mp3, assets/audio/bgm/{intro|consult}.mp3, assets/audio/manifest.json
 // 대사 목록과 발음 바꾸기는 src/shared/voice.js
@@ -17,7 +18,7 @@ import { allVoiceLines } from '../src/shared/voice.js';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const OUT = path.join(ROOT, 'assets', 'audio');
 const MANIFEST = path.join(OUT, 'manifest.json');
-const API = 'https://api.elevenlabs.io';
+const API = process.env.ELEVENLABS_API_BASE ?? 'https://api.elevenlabs.io'; // 테스트 때만 바꾼다
 
 // ---------- 설정: 목소리 톤·BGM 프롬프트는 여기서 고친다 ----------
 const TTS_MODEL = 'eleven_multilingual_v2';
@@ -40,6 +41,7 @@ const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);
 const only = args.find((a) => a.startsWith('--only='))?.slice(7).split(',').filter(Boolean);
 const DRY = flag('dry');
+const CHECK = flag('check');
 
 function loadEnv() {
   const file = path.join(ROOT, '.env');
@@ -52,6 +54,31 @@ function loadEnv() {
 loadEnv();
 const KEY = process.env.ELEVENLABS_API_KEY;
 const VOICE_ID = { manager: process.env.VOICE_MANAGER, customer: process.env.VOICE_CUSTOMER };
+
+// --check: 만들어진 상태 요약(키 없이). 소리가 안 날 때 먼저 돌려 본다
+if (CHECK) {
+  let m = {};
+  try {
+    m = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+  } catch {
+    console.log('assets/audio/manifest.json이 없습니다 → npm run audio:gen -- --bgm 을 먼저 실행하세요');
+    process.exit(1);
+  }
+  const lines = allVoiceLines();
+  for (const role of ['manager', 'customer']) {
+    const mine = lines.filter((l) => l.role === role);
+    const ok = mine.filter((l) => m.voice?.[l.key]?.file && fs.existsSync(path.join(OUT, m.voice[l.key].file)));
+    const dry = mine.filter((l) => m.voice?.[l.key]?.dry);
+    console.log(`${role === 'manager' ? '매니저(아이패드)' : '김민선(아이맥)'} 음성: ${ok.length}/${mine.length}${dry.length ? ` · 추정치만(--dry) ${dry.length}` : ''}`);
+    const missing = mine.filter((l) => !ok.includes(l)).map((l) => l.key);
+    if (missing.length) console.log(`  없음: ${missing.join(', ')}`);
+  }
+  for (const name of Object.keys(BGM)) {
+    const b = m.bgm?.[name];
+    console.log(`BGM ${name}: ${b?.file && fs.existsSync(path.join(OUT, b.file)) ? '있음' : b?.dry ? '추정치만(--dry)' : '없음'}`);
+  }
+  process.exit(0);
+}
 
 if (!DRY) {
   const missing = [!KEY && 'ELEVENLABS_API_KEY', !VOICE_ID.manager && 'VOICE_MANAGER', !VOICE_ID.customer && 'VOICE_CUSTOMER'].filter(Boolean);
@@ -74,6 +101,24 @@ const readManifest = () => {
 // 글자 수로 읽는 시간 추정(한국어 약 6.5자/초, 공백 제외)
 const estimateMs = (text) => Math.round((text.replace(/\s/g, '').length / 6.5) * 1000 + 300);
 
+// ElevenLabs 오류 → 무엇을 고치면 되는지
+function explain(status, text) {
+  let code = '';
+  try {
+    const d = JSON.parse(text).detail;
+    code = typeof d === 'object' ? `${d.status ?? ''} ${d.message ?? ''}` : String(d ?? '');
+  } catch {
+    code = text;
+  }
+  if (/voice_not_found|voice.*not.*found/i.test(code))
+    return 'Voice ID를 찾을 수 없습니다. Voice Library에서 고른 목소리는 먼저 \'Add to my voices\'(내 목소리에 추가)를 누른 뒤, My Voices에서 Voice ID를 다시 복사해 .env에 넣어 주세요';
+  if (status === 401 || /invalid_api_key|missing_permissions|unauthorized/i.test(code))
+    return 'API 키가 틀렸거나 권한이 없습니다. .env의 ELEVENLABS_API_KEY와 키 권한(Text to Speech · Music Generation = Access)을 확인해 주세요';
+  if (/quota|credits|limit/i.test(code) || status === 429) return '크레딧이 부족하거나 요청이 너무 잦습니다. ElevenLabs 사용량 화면을 확인해 주세요';
+  if (/library|professional|sharing/i.test(code)) return '이 목소리는 지금 요금제나 공유 설정으로는 API에서 쓸 수 없습니다. 다른 목소리를 골라 주세요';
+  return '';
+}
+
 async function call(pathname, body, accept) {
   const res = await fetch(`${API}${pathname}`, {
     method: 'POST',
@@ -82,7 +127,8 @@ async function call(pathname, body, accept) {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`${res.status} ${res.statusText} — ${text.slice(0, 400)}`);
+    const hint = explain(res.status, text);
+    throw new Error(`${res.status} ${res.statusText} — ${text.slice(0, 300)}${hint ? `\n  → ${hint}` : ''}`);
   }
   return res;
 }
@@ -95,6 +141,7 @@ async function tts(line, prevText, nextText) {
     'application/json',
   );
   const json = await res.json();
+  if (typeof json.audio_base64 !== 'string') throw new Error(`응답에 음성이 없습니다: ${JSON.stringify(json).slice(0, 200)}`);
   const audio = Buffer.from(json.audio_base64, 'base64');
   const ends = json.alignment?.character_end_times_seconds ?? [];
   // 말이 끝나는 시각. 정렬 정보가 없으면 파일 길이(128kbps 고정)로 계산
@@ -111,6 +158,22 @@ let made = 0;
 let kept = 0;
 let failed = 0;
 fs.mkdirSync(path.join(OUT, 'voice'), { recursive: true });
+
+// 새로 만들 줄이 처음 나오면 목소리마다 짧은 문장 하나로 먼저 시험한다(키·Voice ID 문제를 25줄 실패 전에 알려 줌)
+let checked = false;
+let voiceBroken = false;
+async function preflight() {
+  checked = true;
+  for (const role of ['manager', 'customer']) {
+    try {
+      await tts({ role, text: '안녕하세요.' });
+    } catch (err) {
+      voiceBroken = true;
+      console.error(`✗ ${role === 'manager' ? '매니저(VOICE_MANAGER)' : '김민선(VOICE_CUSTOMER)'} 목소리 시험 실패\n  ${err.message}`);
+    }
+  }
+  if (voiceBroken) console.error('\n목소리 문제를 고친 뒤 다시 실행해 주세요. 대사는 건너뜁니다(이미 만든 음성은 그대로).\n');
+}
 
 for (const [i, line] of lines.entries()) {
   const stepId = line.key.replace(/-\d+$/, '');
@@ -129,6 +192,12 @@ for (const [i, line] of lines.entries()) {
   if (DRY) {
     next[line.key] = { role: line.role, text: line.text, ms: estimateMs(line.text), hash, dry: true };
     made += 1;
+    continue;
+  }
+  if (!checked) await preflight();
+  if (voiceBroken) {
+    if (old) next[line.key] = old;
+    failed += 1;
     continue;
   }
   const sameRole = (j) => (lines[j]?.role === line.role ? lines[j].text : undefined);
@@ -184,6 +253,7 @@ if (flag('bgm')) {
 }
 
 fs.writeFileSync(MANIFEST, `${JSON.stringify({ model: TTS_MODEL, voice: next, bgm }, null, 2)}\n`);
+if (!DRY && lines.length && !Object.values(next).some((v) => v.file)) console.error('\n⚠ 음성이 하나도 만들어지지 않았습니다. 이 상태로는 BGM만 나옵니다. 위의 실패 메시지를 확인해 주세요.');
 console.log(`\n대사 ${lines.length}줄: 새로 ${made} · 그대로 ${kept}${failed ? ` · 실패 ${failed}` : ''}${DRY ? ' (--dry: 길이 추정치만, 소리 없음)' : ''}`);
 console.log(`→ ${path.relative(ROOT, MANIFEST)}. 서버를 켜 둔 채로 아이맥 화면을 새로고침하면 반영됩니다.`);
 if (failed) process.exitCode = 1;

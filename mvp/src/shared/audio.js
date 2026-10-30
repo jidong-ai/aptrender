@@ -87,6 +87,11 @@ export function createAudio({ serverNow, roles, withBgm = false, log = () => {} 
     if (withBgm) await Promise.all(Object.values(manifest.bgm).map((b) => load(b.url)));
     const mine = Object.entries(manifest.voice).filter(([key, v]) => roles.includes(roleOf(key)) && v.url);
     await Promise.all(mine.map(([, v]) => load(v.url)));
+    if (!mine.length) {
+      const msg = `음성 파일이 없습니다(${roles.join('·')}). 맥북에서 npm run audio:gen -- --check 로 확인`;
+      log(msg);
+      console.warn(`[weave] ${msg}`);
+    }
     log(`소리 준비(${roles.join('·')}): 음성 ${mine.filter(([, v]) => buffers.has(v.url)).length}/${mine.length}${withBgm ? ` · BGM ${Object.values(manifest.bgm).filter((b) => buffers.has(b.url)).length}` : ''}`);
     return manifest;
   }
