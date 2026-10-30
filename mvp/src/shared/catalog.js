@@ -12,9 +12,20 @@ export const FLOORS = {
   flosso: { name: '진 그란데 스퀘어 플로쏘', brand: '동화자연마루', pricePerM2: 58000, swatch: '#d9d4cb', photo: '/assets/ui/figma/floor-flosso.jpg' },
 };
 
-// 옵션수정 패널의 색상 칩(Figma 1437:3759). selected = 체험에서 누를 칩
-export const FLOOR_CHIPS = ['#e6dccb', '#dac9ac', '#d3b688', '#c69a61', '#c2b183', '#ac9a80', '#97673b', '#6e4626'];
-export const FLOOR_CHIP_SELECTED = 1; // Figma 1437:3759에서 선택된 칩(두 번째)
+// 옵션수정 패널의 자재 칩(Figma 2140:13114 '자재 색상', 왼쪽 위부터). color = 이미지가 뜨기 전 바탕(이미지 평균색)
+// selected = 체험에서 누를 칩: 두 번째 포틀랜드 모티프
+const chip = (n, color) => ({ img: `/assets/ui/floor-chips/chip-${n}.jpg`, color });
+export const FLOOR_CHIPS = [
+  chip(1, '#e3e1dc'),
+  chip(2, '#dbd4cc'), // 포틀랜드 모티프
+  chip(3, '#e8e2da'),
+  chip(4, '#cec9c5'),
+  chip(5, '#cdccc4'),
+  chip(6, '#cebda1'),
+  chip(7, '#ded6c5'),
+  chip(8, '#b89678'),
+];
+export const FLOOR_CHIP_SELECTED = 1;
 
 export const ESTIMATE = {
   areaM2: 9.5, // 주방 바닥 면적(예시)

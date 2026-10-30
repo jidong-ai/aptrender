@@ -201,7 +201,7 @@ export function renderOptionEditor(el, { picked }) {
   const chips = FLOOR_CHIPS.map((c, i) =>
     h('button.oe-chip', {
       type: 'button',
-      style: { background: c },
+      style: { background: `${c.color} url(${c.img}) center / cover no-repeat border-box` },
       dataset: { target: i === FLOOR_CHIP_SELECTED ? 'chip' : `chip:${i}` },
       'aria-pressed': String(picked && i === FLOOR_CHIP_SELECTED),
     }),
