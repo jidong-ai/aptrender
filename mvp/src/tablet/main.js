@@ -286,8 +286,9 @@ function setCaptionNext(step, flow) {
   else delete $('caption').dataset.target;
 }
 
-// 프롤로그 '<' : 이전 장으로(가이드 대상과 무관하게 언제나 누를 수 있다)
+// 프롤로그 '<' : 이전 장으로. 매장 장면의 '프롤로그 다시보기': 프롤로그 1장부터(가이드 대상과 무관하게 언제나 누를 수 있다)
 $('proBack').addEventListener('click', () => act('back'));
+$('proReplay').addEventListener('click', () => act('replay'));
 
 let stepEnteredLocal = 0;
 const lookDone = () => lookAcc >= LOOK_DEG || performance.now() - stepEnteredLocal >= LOOK_MS;
@@ -319,6 +320,7 @@ function render(state) {
   const inConsult = stepIndex(flow.step) >= stepIndex('S2-1');
 
   $('start').hidden = screen !== 'start';
+  $('proReplay').hidden = !step.replay;
   $('prologue').hidden = screen !== 'prologue';
   if (screen === 'prologue') {
     $('prologue').dataset.page = t.page;
@@ -520,12 +522,36 @@ sync.on('info', ({ status }) => document.body.classList.toggle('is-offline', sta
 window.__weave = { viewer, sync, audio, get state() { return latest; }, check: CHECK }; // 자동 테스트·디버그용
 
 // ---------- 직원 메뉴: 왼쪽 위 2초 길게 누르기 ----------
+// 덮개 요소 없이 좌표로 감지한다(덮개가 프롤로그 '<' 버튼을 가리던 문제). 메뉴가 열린 뒤 손을 떼며 생기는 클릭은 버린다
+const STAFF_CORNER = 90;
 let pressTimer = 0;
-$('staffZone').addEventListener('pointerdown', () => {
-  clearTimeout(pressTimer);
-  pressTimer = setTimeout(openStaff, 2000);
-});
-for (const type of ['pointerup', 'pointercancel', 'pointerleave']) $('staffZone').addEventListener(type, () => clearTimeout(pressTimer));
+let pressAt = null;
+let swallowClick = false;
+addEventListener(
+  'pointerdown',
+  (e) => {
+    clearTimeout(pressTimer);
+    if (e.clientX > STAFF_CORNER || e.clientY > STAFF_CORNER || !$('staff').hidden) return;
+    pressAt = { x: e.clientX, y: e.clientY };
+    pressTimer = setTimeout(() => {
+      swallowClick = true;
+      openStaff();
+    }, 2000);
+  },
+  true,
+);
+addEventListener('pointermove', (e) => pressAt && Math.hypot(e.clientX - pressAt.x, e.clientY - pressAt.y) > 30 && clearTimeout(pressTimer), true);
+for (const type of ['pointerup', 'pointercancel']) addEventListener(type, () => clearTimeout(pressTimer), true);
+addEventListener(
+  'click',
+  (e) => {
+    if (!swallowClick) return;
+    swallowClick = false;
+    e.preventDefault();
+    e.stopPropagation();
+  },
+  true,
+);
 
 let gridOn = false;
 function openStaff() {

@@ -22,7 +22,12 @@ const API = process.env.ELEVENLABS_API_BASE ?? 'https://api.elevenlabs.io'; // �
 
 // ---------- 설정: 목소리 톤·BGM 프롬프트는 여기서 고친다 ----------
 const TTS_MODEL = 'eleven_multilingual_v2';
-const VOICE_SETTINGS = { stability: 0.5, similarity_boost: 0.75, style: 0, use_speaker_boost: true };
+const BASE_SETTINGS = { stability: 0.5, similarity_boost: 0.75, style: 0, use_speaker_boost: true };
+// 목소리별 설정. speed: 말 빠르기(1 = 기본, ElevenLabs 허용 범위 0.7~1.2). 바꾸면 그 목소리 대사만 다시 만든다
+const VOICE_SETTINGS = {
+  manager: { ...BASE_SETTINGS, speed: 1.2 }, // 10/30 사용자 요청: 기본보다 1.25배 정도 빠르게(허용 최대 1.2)
+  customer: BASE_SETTINGS,
+};
 const BGM = {
   intro: {
     ms: 90_000,
@@ -32,7 +37,8 @@ const BGM = {
   consult: {
     ms: 90_000,
     prompt:
-      'Gentle ambient background for a quiet consultation: soft pads, sparse warm piano notes, very subtle pulse, 70 BPM. Stays in the background under conversation, no sudden changes, seamless loop. Instrumental only, no vocals.',
+      // 10/30 사용자 피드백: 너무 미래적 → 밝고 희망적이되 차분하게. 신스·전자음 없이 어쿠스틱 악기로
+      'Bright, hopeful and calm acoustic background music for a friendly home interior consultation. Warm acoustic guitar fingerpicking and soft felt piano in a major key, light strings, gentle shaker, 80 BPM. Feels like a sunny Saturday morning planning a new kitchen. Stays in the background under conversation, no sudden changes, seamless loop. No synthesizers, no electronic pads, no futuristic sounds. Instrumental only, no vocals.',
   },
 };
 
@@ -137,7 +143,7 @@ async function call(pathname, body, accept) {
 async function tts(line, prevText, nextText) {
   const res = await call(
     `/v1/text-to-speech/${encodeURIComponent(VOICE_ID[line.role])}/with-timestamps?output_format=mp3_44100_128`,
-    { text: line.text, model_id: TTS_MODEL, voice_settings: VOICE_SETTINGS, previous_text: prevText, next_text: nextText },
+    { text: line.text, model_id: TTS_MODEL, voice_settings: VOICE_SETTINGS[line.role], previous_text: prevText, next_text: nextText },
     'application/json',
   );
   const json = await res.json();
@@ -177,7 +183,7 @@ async function preflight() {
 
 for (const [i, line] of lines.entries()) {
   const stepId = line.key.replace(/-\d+$/, '');
-  const hash = sha1([line.text, line.role, DRY ? 'dry' : VOICE_ID[line.role], TTS_MODEL, VOICE_SETTINGS]);
+  const hash = sha1([line.text, line.role, DRY ? 'dry' : VOICE_ID[line.role], TTS_MODEL, VOICE_SETTINGS[line.role]]);
   const file = `voice/${line.key}.mp3`;
   const old = prev[line.key];
   const wanted = !only || only.includes(stepId);
@@ -190,7 +196,7 @@ for (const [i, line] of lines.entries()) {
     continue;
   }
   if (DRY) {
-    next[line.key] = { role: line.role, text: line.text, ms: estimateMs(line.text), hash, dry: true };
+    next[line.key] = { role: line.role, text: line.text, ms: Math.round(estimateMs(line.text) / (VOICE_SETTINGS[line.role].speed ?? 1)), hash, dry: true };
     made += 1;
     continue;
   }

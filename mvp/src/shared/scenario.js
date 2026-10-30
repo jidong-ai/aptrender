@@ -14,6 +14,7 @@
 //  quiet    가이드 표시 없이 대상만 누를 수 있게(시작화면처럼 버튼이 이미 눈에 띌 때)
 //  cta      대상이 'CTA button' 컴포넌트(이미 색으로 강조됨) → 하이라이트하지 않는다
 //  back     프롤로그 '<' 버튼으로 돌아갈 단계
+//  replay   '프롤로그 다시보기' 버튼으로 갈 단계(매장 장면)
 //  countdown 프롤로그 마지막 장: auto까지 남은 초를 '5초 뒤 체험이 시작됩니다'로 보여 준다
 //  next     다음 단계 id(생략하면 바로 다음). 'reset'이면 처음으로. 값마다 갈 곳이 다르면 { 값: id }
 //  copy     프롤로그 본문(캡션 말풍선 없이 화면 가운데 큰 글씨)
@@ -98,6 +99,7 @@ export const STEPS = [
   {
     id: 'S0-5',
     chapter: 'opening',
+    replay: 'S0-1',
     caption: { speaker: 'manager', text: '반갑습니다! Weave 매장 첫 출근을 축하드려요.' },
     target: 'caption-next',
     hint: '다음',
@@ -107,6 +109,7 @@ export const STEPS = [
   {
     id: 'S0-6a',
     chapter: 'opening',
+    replay: 'S0-1',
     caption: { speaker: 'manager', text: '김민선씨의 아파트 주방 스캔본을 보면서 상담을 진행할텐데,\n오늘은 첫 컨설팅이니까 제가 함께 동행할거에요' },
     target: 'hotspot',
     hint: '화살표를 눌러 안으로 이동',
@@ -116,6 +119,7 @@ export const STEPS = [
   {
     id: 'S0-6b',
     chapter: 'opening',
+    replay: 'S0-1',
     caption: { speaker: 'manager', text: '이곳은 상담 전 자재를 둘러볼 수 있는 공간이에요.' },
     target: 'hotspot',
     hint: '화살표를 눌러 안으로 이동',
@@ -125,6 +129,7 @@ export const STEPS = [
   {
     id: 'S0-6c',
     chapter: 'opening',
+    replay: 'S0-1',
     caption: { speaker: 'manager', text: '실물 샘플이 비치되어있어서, 상담 중 필요한 자재는 직접 가져다 제안할 수 있어요' },
     target: 'caption-next',
     hint: '다음',
@@ -134,6 +139,7 @@ export const STEPS = [
   {
     id: 'S0-6d',
     chapter: 'opening',
+    replay: 'S0-1',
     caption: { speaker: 'manager', text: '상담실에서 김민선 씨가 기다리고 있으니, 이제 이동해볼게요.' },
     target: 'caption-next',
     hint: '다음',
@@ -143,6 +149,7 @@ export const STEPS = [
   {
     id: 'S0-6e',
     chapter: 'opening',
+    replay: 'S0-1',
     caption: { speaker: 'manager', text: '캡션 안내에 따라 순서대로 상담을 진행해주세요' },
     target: 'hotspot',
     hint: '화살표를 눌러 상담실로 이동',
@@ -394,6 +401,10 @@ export function nextStep(flow, msg, now = Date.now()) {
   if (msg.action === 'back') {
     if (!step.back) return { error: `${step.id}에서는 뒤로 갈 수 없습니다` };
     return { flow: enter(flow, step.back, flow.choices, now) };
+  }
+  if (msg.action === 'replay') {
+    if (!step.replay) return { error: `${step.id}에서는 프롤로그를 다시 볼 수 없습니다` };
+    return { flow: enter(flow, step.replay, flow.choices, now) };
   }
   if (msg.action === 'auto') {
     if (!step.auto) return { error: `${step.id}는 자동으로 넘어가지 않습니다` };

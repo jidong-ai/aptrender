@@ -169,3 +169,12 @@ test('주석은 체크 단계부터 아일랜드 배치 전까지만 남는다',
   assert.equal(clearsStrokes('S3-2b'), true);
   assert.equal(STEP['S3-2a'].clearStrokes, true);
 });
+
+test('매장 장면에서는 프롤로그를 다시 볼 수 있고, 상담 중에는 안 된다', () => {
+  for (const id of ['S0-5', 'S0-6a', 'S0-6b', 'S0-6c', 'S0-6d', 'S0-6e']) {
+    const r = nextStep(jumpFlow(createFlow(0), id, 0), { from: id, action: 'replay' }, 1);
+    assert.equal(r.flow?.step, 'S0-1', id);
+  }
+  assert.ok(nextStep(jumpFlow(createFlow(0), 'S2-1', 0), { from: 'S2-1', action: 'replay' }).error);
+  assert.ok(nextStep(jumpFlow(createFlow(0), 'S0-2', 0), { from: 'S0-2', action: 'replay' }).error); // 프롤로그 안에서는 '<'
+});

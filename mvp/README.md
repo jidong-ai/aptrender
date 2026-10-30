@@ -177,6 +177,7 @@ XR 서비스의 "스캔한 공간은 그대로, 그 위에 오브제·자재를 
 | 목소리를 바꿨다(.env의 Voice ID) | `npm run audio:gen -- --force` |
 | BGM 분위기를 바꾸고 싶다 | `scripts/gen-audio.mjs` 위쪽 `BGM` 프롬프트를 고친 뒤 `npm run audio:gen -- --bgm` |
 | BGM만 나오고 목소리가 안 나온다 | `npm run audio:gen -- --check`로 만들어진 개수 확인 → 0이면 `npm run audio:gen`을 다시 돌려 실패 메시지(→ 뒤 안내)대로 고친다. Voice Library 목소리는 'Add to my voices' 후 My Voices의 Voice ID를 써야 한다 |
+| 말이 너무 느리다/빠르다 | `scripts/gen-audio.mjs` 위쪽 `VOICE_SETTINGS`의 `speed`(0.7~1.2, 매니저는 지금 1.2)를 고친 뒤 `npm run audio:gen` (그 목소리만 다시) |
 | 발음이 이상하다(예: 영어·숫자) | `src/shared/voice.js`의 `PRONOUNCE`에 바꿀 말을 넣고 `npm run audio:gen` |
 
 - **싱크**: 단계에 들어가는 순간 그 단계 음성을 튼다. 프롤로그·로딩처럼 자동으로 넘어가는 단계는 음성이 끝나고 0.7초 뒤에 넘어간다(정해 둔 러닝타임보다 길 때). 말풍선을 일찍 누르면 이전 음성은 끊긴다

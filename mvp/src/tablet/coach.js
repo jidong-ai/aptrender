@@ -30,7 +30,7 @@ export function createCoach({ root, hole, label, onBlocked = () => {} }) {
   function gate(e) {
     const el = e.target instanceof Element ? e.target : null;
     if (!el) return;
-    if (el.closest('[data-free], .staff, .idle, .staff-zone')) return;
+    if (el.closest('[data-free], .staff, .idle')) return;
     const btn = el.closest('[data-target]');
     if (!btn) return;
     if (allowed(btn)) return;

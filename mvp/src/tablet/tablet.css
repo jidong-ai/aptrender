@@ -198,8 +198,9 @@
 
 .pro-header {
   position: absolute;
-  left: 90px;
-  top: 94px;
+  left: 66px; /* Figma (90, 94)에서 누를 영역(padding)만큼 바깥으로 */
+  top: 70px;
+  padding: 24px !important; /* .ui button의 padding: 0보다 앞서게 */
   z-index: 2;
   display: flex;
   align-items: center;
@@ -212,6 +213,32 @@
 }
 
 .pro-header img {
+  width: 11.775px;
+  height: 20px;
+  transform: rotate(180deg);
+}
+
+/* 매장 장면: 프롤로그 다시보기. 밝은 매장 렌더 위라 어두운 반투명 알약 */
+.pro-replay {
+  position: absolute;
+  left: 66px;
+  top: 70px;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 30px 18px 26px !important;
+  border-radius: 999px;
+  background: rgb(20 24 30 / 0.55) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pro-replay img {
   width: 11.775px;
   height: 20px;
   transform: rotate(180deg);
@@ -2194,15 +2221,6 @@
 }
 
 /* ---------- 직원 메뉴·유휴 ---------- */
-.staff-zone {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 90px;
-  height: 90px;
-  z-index: 60;
-}
-
 .staff,
 .idle {
   position: fixed;
