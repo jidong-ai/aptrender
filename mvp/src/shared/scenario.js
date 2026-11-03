@@ -299,9 +299,8 @@ export const STEPS = [
     id: 'S4-2d',
     chapter: 'floor',
     guide: '어두운 색상의 아일랜드에 어울리는 바닥재 2개를 제안해주세요.',
-    target: 'apply',
-    cta: true,
-    hint: '적용하기',
+    target: 'apply', // 패널 아래에 있어 눈에 덜 띄므로 CTA여도 하이라이트 + 말풍선으로 알려 준다(10/30 피드백)
+    hint: '적용하기를 눌러 제안하기',
     set: () => ({ floor: 'portland' }), // 제안한 바닥재를 먼저 깔아 보여 준다
     tablet: { pano: 'kitchen_side', panel: 'options', chipPicked: true, area: 'on' },
     xr: { screen: 'home', pano: 'kitchen_side' },
