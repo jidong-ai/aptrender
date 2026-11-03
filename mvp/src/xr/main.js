@@ -127,7 +127,44 @@ for (const [name, file, label] of NAV) {
 }
 
 // ---------- wire 화면 ----------
-$('standby').append(el('div', 'logo', 'Weave'), el('p', '', 'XR 상담을 준비하고 있어요'), el('small', '', '매니저가 상담을 시작하면 김민선 님의 주방이 열립니다'));
+// 대기 화면: 지나가는 관람객도 체험 부스인 줄 알게 프롤로그 장면을 인트로처럼 돌린다(11/03 피드백).
+// 태블릿에서 프롤로그를 보는 동안에는 같은 장면에 멈춘다
+const SB_SLIDES = [1, 2, 3, 4].map((n) => ({ src: `/assets/ui/prologue/s0-${n}-bg.jpg`, text: STEP[`S0-${n}`].copy }));
+const SB_MS = 6000;
+const sbImgs = SB_SLIDES.map((s) => Object.assign(el('img', 'sb-slide'), { src: s.src, alt: '' }));
+const sbSlides = el('div', 'sb-slides');
+sbSlides.append(...sbImgs);
+const sbCenter = el('div', 'sb-center');
+sbCenter.append(
+  Object.assign(el('img', 'sb-logo'), { src: '/assets/cover/weave-logo-white.svg', alt: '오늘의집 Weave' }),
+  el('p', '', 'XR 상담을 준비하고 있어요'),
+  el('small', '', '좌측 태블릿에서 상담 플로우를 시작하면 XR상담 장면이 연출됩니다.'),
+);
+const sbCopy = el('p', 'sb-copy');
+const sbDots = el('div', 'sb-dots');
+sbDots.append(...SB_SLIDES.map(() => el('i')));
+$('standby').append(sbSlides, el('div', 'sb-shade'), sbCenter, sbCopy, sbDots);
+let sbIndex = -1;
+let sbTimer = 0;
+function showSlide(i) {
+  if (i === sbIndex) return;
+  sbIndex = i;
+  sbImgs.forEach((img, k) => img.classList.toggle('is-on', k === i));
+  [...sbDots.children].forEach((d, k) => d.classList.toggle('on', k === i));
+  sbCopy.classList.remove('is-in');
+  void sbCopy.offsetWidth; // 문구도 장면마다 다시 떠오름
+  sbCopy.textContent = SB_SLIDES[i].text;
+  sbCopy.classList.add('is-in');
+}
+/** on: 대기 화면이 보이는지. page: 태블릿이 보고 있는 프롤로그 장(1~4)이면 그 장면에 멈춤 */
+function standbyLoop(on, page) {
+  clearInterval(sbTimer);
+  sbTimer = 0;
+  if (!on) return;
+  if (page) return showSlide(page - 1);
+  if (sbIndex < 0) showSlide(0);
+  sbTimer = setInterval(() => showSlide((sbIndex + 1) % SB_SLIDES.length), SB_MS);
+}
 function showBoot() {
   $('boot').textContent = '';
   const bar = el('div', 'bar');
@@ -317,6 +354,7 @@ function onState(state) {
   const inHome = screen === 'home' || screen === 'ending';
 
   $('standby').hidden = screen !== 'standby';
+  if (stepChanged) standbyLoop(screen === 'standby', step.tablet.screen === 'prologue' ? step.tablet.page : null);
   $('boot').hidden = screen !== 'boot';
   if (screen === 'boot' && stepChanged) showBoot();
   $('home').hidden = !inHome || screen === 'ending';

@@ -337,13 +337,116 @@
 }
 
 .standby {
-  background: radial-gradient(circle at 50% 40%, #1f3a5f, #0b1626 70%);
+  overflow: hidden;
+  background: #0b1626;
 }
 
-.standby .logo {
-  font-size: 96px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+/* 프롤로그 장면 인트로: 천천히 다가가며(켄 번스) 겹쳐 바뀜 */
+.sb-slides,
+.sb-shade {
+  position: absolute;
+  inset: 0;
+}
+
+.sb-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+
+.sb-slide.is-on {
+  opacity: 1;
+  animation: sb-kenburns 9s linear both;
+}
+
+@keyframes sb-kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+/* 글자가 읽히게 위·아래를 어둡게 */
+.sb-shade {
+  background: linear-gradient(180deg, rgb(8 16 30 / 0.6) 0%, rgb(8 16 30 / 0.3) 42%, rgb(8 16 30 / 0.35) 60%, rgb(8 16 30 / 0.85) 100%);
+}
+
+.sb-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 0.35);
+}
+
+.sb-logo {
+  width: 420px;
+  height: auto;
+  margin-bottom: 18px;
+}
+
+.standby .sb-center small {
+  font-size: 26px;
+  opacity: 0.9;
+}
+
+.sb-copy {
+  position: absolute;
+  left: 50%;
+  bottom: 118px;
+  width: 1500px;
+  margin: 0;
+  transform: translateX(-50%);
+  font-size: 28px !important;
+  font-weight: 500 !important;
+  line-height: 1.55;
+  white-space: pre-line;
+  opacity: 0;
+}
+
+.sb-copy.is-in {
+  animation: sb-copy-in 0.9s ease 0.3s both;
+}
+
+@keyframes sb-copy-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 0.92;
+    transform: translate(-50%, 0);
+  }
+}
+
+.sb-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  display: flex;
+  gap: 12px;
+  transform: translateX(-50%);
+}
+
+.sb-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.35);
+  transition: background 0.4s, width 0.4s;
+}
+
+.sb-dots i.on {
+  width: 28px;
+  border-radius: 5px;
+  background: #fff;
 }
 
 .standby p,
