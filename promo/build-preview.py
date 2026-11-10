@@ -8,6 +8,7 @@
   promo/edit.json         컷 구성(장면 길이, 녹화 클립 구간, 슬롯 좌표)
   promo/frames/*.png      Figma '가로 영상 16:9' 섹션에서 내보낸 1920x1080 프레임
   promo/out/timeline.json npm run promo:record 결과(단계별 시작 시각)
+  promo/out/intro/*.mp4   python3 promo/build-intro.py 결과(인트로 3장)
 
 프리뷰는 흐름 확인용이다. 최종 편집은 EDIT_GUIDE.md를 보고 편집 프로그램에서 한다.
 """
@@ -57,6 +58,8 @@ def build_slide(s, cfg, timeline, order):
     fps = cfg["fps"]
     dur = s["dur"]
     out = SLIDES / f"{s['id']}.mp4"
+    if "video" in s:  # 미리 만든 영상(인트로 어절별 모션: build-intro.py)
+        return HERE / s["video"]
     if "placeholder" in s:
         png = SLIDES / f"{s['id']}.png"
         placeholder(s["placeholder"], png)

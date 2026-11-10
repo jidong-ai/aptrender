@@ -1,0 +1,27 @@
+{
+  "_comment": "Figma 'intro수정' 섹션(2198:4254)에서 내보낸 인트로 소스. 좌표는 1920x1080 프레임 기준의 렌더 영역(get_screenshot과 같은 영역). kind=words는 어절별, block은 한 덩어리로 뜬다. at = 등장 시작(초).",
+  "intro01": {
+    "figma": "2198:4210", "dur": 4.5, "bg": "intro01_bg.png",
+    "els": [
+      { "file": "intro01_logo.png", "xy": [120, 759.2], "kind": "block", "at": 0.3 },
+      { "file": "intro01_sub.png", "xy": [121.3, 914.1], "kind": "words", "text": "전문가와 함께하는 인테리어 XR 서비스", "at": 0.9 }
+    ]
+  },
+  "intro02": {
+    "figma": "2198:4076", "dur": 5.0, "bg": "intro02_bg.png",
+    "els": [
+      { "file": "intro02_lead.png", "xy": [386.6, 469.1], "kind": "words", "text": "계획부터 시공까지 전문가의 도움이 필수적인 반셀프 인테리어,", "at": 0.3 },
+      { "file": "intro02_head.png", "xy": [370.1, 548.2], "kind": "words", "typing": true, "text": "어떻게 내 취향을 정확하게 전달할 수 있을까요?", "at": 1.6 }
+    ]
+  },
+  "intro03": {
+    "figma": "2198:4138", "dur": 7.0, "bg": "intro03_bg.png",
+    "els": [
+      { "file": "intro03_head.png", "xy": [319, 221.1], "kind": "words", "text": "오늘의집 Weave는 공간 시뮬레이션과 공사 관리를 통해\n인테리어 소비자와 전문가가 함께 공간을 완성하도록 돕는 서비스예요", "at": 0.3 },
+      { "file": "intro03_card1.png", "xy": [548, 455], "kind": "block", "at": 2.6 },
+      { "file": "intro03_quote1.png", "xy": [522.8, 803.3], "kind": "words", "text": "“취향을 구현하기 위한\n조사와 소통이 너무 힘들어요\"", "at": 3.0 },
+      { "file": "intro03_card2.png", "xy": [1109.5, 470], "kind": "block", "at": 3.9 },
+      { "file": "intro03_quote2.png", "xy": [1085.2, 804.5], "kind": "words", "text": "“불가능한 시공을 요구받고,\n매번 그 이유를 설명해야해요\"", "at": 4.3 }
+    ]
+  }
+}
