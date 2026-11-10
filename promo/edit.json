@@ -1,0 +1,40 @@
+{
+  "_comment": "프로모션 영상 컷 구성. build-preview.py와 EDIT_GUIDE.md가 이 파일을 기준으로 한다. 시간 단위는 초. slot 좌표는 1920x1080 프레임 기준(Figma '가로 영상 16:9' 섹션의 SCREEN_SLOT_* 레이어와 같다).",
+  "fps": 30,
+  "crossfade": 0.4,
+  "slides": [
+    { "id": "H1", "frame": "frames/01_H1_hook.png", "dur": 5, "motion": "zoom" },
+    { "id": "H2", "frame": "frames/02_H2_cover.png", "dur": 4, "motion": "zoom" },
+    { "id": "H3", "frame": "frames/03_H3_stages.png", "dur": 7, "motion": "zoom" },
+    { "id": "1-0", "frame": "frames/04_1-0_chapter01.png", "dur": 3, "motion": "zoom" },
+    { "id": "1-1", "frame": "frames/05_1-1_scan.png", "dur": 9, "motion": "zoom" },
+    { "id": "2-0", "frame": "frames/06_2-0_chapter02.png", "dur": 3, "motion": "zoom" },
+    {
+      "id": "2-1", "frame": "frames/07_2-1_moodboard.png", "dur": 12,
+      "overlays": [
+        { "role": "xr", "slot": [1050, 229, 768, 537], "radius": 18, "segments": [["S2-1", 0.8, 5.0], ["S2-2a", 0, null], ["S2-2c", 0, null]] },
+        { "role": "tablet", "slot": [790, 668, 475, 332], "radius": 10, "segments": [["S2-1", 0.8, 5.0], ["S2-2a", 0, null], ["S2-2c", 0, null]] }
+      ]
+    },
+    {
+      "id": "2-2", "frame": "frames/08_2-2_propose.png", "dur": 13,
+      "overlays": [
+        { "role": "xr", "slot": [1050, 229, 768, 537], "radius": 18, "segments": [["S3-1c", 1.5, null], ["S3-2a", 0, null], ["S3-2b", 0, 3.0]] },
+        { "role": "tablet", "slot": [790, 668, 475, 332], "radius": 10, "segments": [["S3-1c", 1.5, null], ["S3-2a", 0, null], ["S3-2b", 0, 3.0]] }
+      ]
+    },
+    {
+      "id": "2-3", "frame": "frames/09_2-3_apply_estimate.png", "dur": 15,
+      "overlays": [
+        { "role": "xr", "slot": [743, 398, 1087, 612], "radius": 24, "until": 12.5, "segments": [["S4-2c", 2.0, null], ["S4-2d", 0, null], ["S4-3a", 0, null], ["S4-3b", 0, 3.0]] }
+      ]
+    },
+    { "id": "2-4", "frame": "frames/10_2-4_videocall.png", "dur": 7, "motion": "zoom" },
+    { "id": "3-0", "frame": "frames/11_3-0_chapter03.png", "dur": 3, "motion": "zoom" },
+    { "id": "3-1", "frame": "frames/12_3-1_schedule.png", "dur": 6, "motion": "zoom" },
+    { "id": "3-2", "frame": "frames/13_3-2_matching.png", "dur": 5, "motion": "zoom" },
+    { "id": "3-3", "frame": "frames/14_3-3_records.png", "dur": 5, "motion": "zoom" },
+    { "id": "LIVE", "placeholder": "실사 체험 영상 넣을 자리 · 약 4초\n전시장 태블릿·아이맥 체험 장면 2~3컷", "dur": 4 },
+    { "id": "E1", "frame": "frames/15_E1_feedback.png", "dur": 6, "motion": "zoom" }
+  ]
+}
