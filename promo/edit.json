@@ -1,5 +1,5 @@
 {
-  "_comment": "프로모션 영상 컷 구성. build-preview.py·build-motion.py·EDIT_GUIDE.md가 이 파일을 기준으로 한다. 시간 단위는 초. I1~I3은 build-intro.py(어절별 등장), 나머지 장면은 build-motion.py(컴포넌트 순차 등장) 영상을 쓴다. 녹화 클립 장면(2-1~2-3)은 base 영상 위 slot 좌표(Figma SCREEN_SLOT_*)에 클립을 start초부터 얹는다. clipSpeed: 녹화 클립 재생 배속(장면 길이 = start + 클립 길이 / clipSpeed).",
+  "_comment": "프로모션 영상 컷 구성. build-preview.py·build-motion.py·EDIT_GUIDE.md가 이 파일을 기준으로 한다. 시간 단위는 초. I1~I3·O1은 build-intro.py(어절별 등장), 나머지 장면은 build-motion.py(컴포넌트 순차 등장) 영상을 쓴다. 녹화 클립 장면(2-1~2-3)은 base 영상 위 slot 좌표(Figma SCREEN_SLOT_*)에 클립을 start초부터 얹는다. segments: [단계, 시작 오프셋, 끝 오프셋(null=다음 단계까지), 배속]. 배속을 생략하면 clipSpeed(원본 대비)를 쓴다.",
   "fps": 30,
   "crossfade": 0.4,
   "slides": [
@@ -41,7 +41,7 @@
     {
       "id": "2-1",
       "base": "out/motion/2-1.mp4",
-      "dur": 11.2,
+      "dur": 10.7,
       "overlays": [
         {
           "role": "xr",
@@ -57,17 +57,20 @@
             [
               "S2-1",
               0.8,
-              5.0
+              5.0,
+              1.5
             ],
             [
               "S2-2a",
               0,
-              null
+              null,
+              1.5
             ],
             [
               "S2-2c",
               0,
-              null
+              null,
+              3.0
             ]
           ]
         },
@@ -85,17 +88,20 @@
             [
               "S2-1",
               0.8,
-              5.0
+              5.0,
+              1.5
             ],
             [
               "S2-2a",
               0,
-              null
+              null,
+              1.5
             ],
             [
               "S2-2c",
               0,
-              null
+              null,
+              3.0
             ]
           ]
         }
@@ -104,7 +110,7 @@
     {
       "id": "2-2",
       "base": "out/motion/2-2.mp4",
-      "dur": 12.3,
+      "dur": 13.0,
       "overlays": [
         {
           "role": "xr",
@@ -120,17 +126,20 @@
             [
               "S3-1c",
               1.5,
-              null
+              null,
+              2.25
             ],
             [
               "S3-2a",
               0,
-              null
+              null,
+              1.5
             ],
             [
               "S3-2b",
               0,
-              3.0
+              3.0,
+              1.5
             ]
           ]
         },
@@ -148,17 +157,20 @@
             [
               "S3-1c",
               1.5,
-              null
+              null,
+              2.25
             ],
             [
               "S3-2a",
               0,
-              null
+              null,
+              1.5
             ],
             [
               "S3-2b",
               0,
-              3.0
+              3.0,
+              1.5
             ]
           ]
         }
@@ -167,38 +179,42 @@
     {
       "id": "2-3",
       "base": "out/motion/2-3.mp4",
-      "dur": 11.2,
+      "dur": 11.8,
       "overlays": [
         {
           "role": "xr",
           "slot": [
-            831,
-            435,
-            870,
-            489
+            577,
+            293,
+            1244,
+            700
           ],
-          "radius": 16,
-          "start": 1.32,
+          "radius": 0,
+          "start": 1.15,
           "segments": [
             [
               "S4-2c",
               2.0,
-              null
+              null,
+              2.25
             ],
             [
               "S4-2d",
               0,
-              null
+              null,
+              2.25
             ],
             [
               "S4-3a",
               0,
-              null
+              null,
+              1.5
             ],
             [
               "S4-3b",
               0,
-              3.0
+              3.0,
+              1.5
             ]
           ]
         }
@@ -230,15 +246,15 @@
       "dur": 5
     },
     {
-      "id": "LIVE",
-      "placeholder": "실사 체험 영상 넣을 자리 · 약 4초\n전시장 태블릿·아이맥 체험 장면 2~3컷",
-      "dur": 4
+      "id": "O1",
+      "video": "out/intro/outro01.mp4",
+      "dur": 4.0
     },
     {
-      "id": "E1",
-      "video": "out/motion/E1.mp4",
-      "dur": 6
+      "id": "O2",
+      "video": "out/motion/O2.mp4",
+      "dur": 3.5
     }
   ],
-  "clipSpeed": 1.9
+  "clipSpeed": 1.5
 }

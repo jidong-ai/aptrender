@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """프로모션 영상 러프 프리뷰를 만든다(ffmpeg 필요).
 
-  python3 promo/build-preview.py            # promo/out/preview.mp4
+  python3 promo/build-preview.py            # promo/out/preview.mp4 (무음)
+  python3 promo/build-preview.py --bgm promo/audio/bgm_a.mp3   # BGM 포함
   python3 promo/build-preview.py --only 2-3 # 한 장면만 (promo/out/slides/2-3.mp4)
 
 입력
@@ -76,15 +77,15 @@ def build_slide(s, cfg, timeline, order):
         video = OUT / track["video"]
         x, y, w, h = ov["slot"]
         start = ov.get("start", 0.0)  # 슬롯 자리 화면이 다 뜬 뒤 클립 시작
-        ranges = [seg_range(track, order, *seg) for seg in ov["segments"]]
-        total = sum(b - a for a, b in ranges)
-        until = ov.get("until", dur - start)
-        speed = total / until
+        base_speed = cfg.get("clipSpeed", 1.5)
+        segs = [(seg_range(track, order, *seg[:3]), seg[3] if len(seg) > 3 else base_speed) for seg in ov["segments"]]
+        total = sum((b - a) / sp for (a, b), sp in segs)  # 배속을 적용한 클립 길이
         parts = []
-        for a, b in ranges:
+        for (a, b), sp in segs:
             inputs += ["-ss", f"{a:.3f}", "-to", f"{b:.3f}", "-i", str(video)]
-            parts.append(f"[{idx}:v]fps={fps},setpts=PTS-STARTPTS[p{k}_{idx}]")
+            parts.append(f"[{idx}:v]fps={fps},setpts=(PTS-STARTPTS)/{sp}[p{k}_{idx}]")
             idx += 1
+        ranges = segs
         mask = SLIDES / f"mask_{w}x{h}_{ov['radius']}.png"
         rounded_mask(w, h, ov["radius"], mask)
         inputs += ["-loop", "1", "-i", str(mask)]
@@ -92,19 +93,14 @@ def build_slide(s, cfg, timeline, order):
         idx += 1
         labels = "".join(f"[p{k}_{i}]" for i in range(mask_idx - len(ranges), mask_idx))
         filters += parts
-        filters.append(f"{labels}concat=n={len(ranges)}:v=1:a=0,setpts=PTS/{speed:.4f}+{start}/TB,fps={fps},"
+        filters.append(f"{labels}concat=n={len(ranges)}:v=1:a=0,setpts=PTS-STARTPTS+{start}/TB,fps={fps},"
                        f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},format=rgba[c{k}]")
         filters.append(f"[{mask_idx}:v]format=gray,scale={w}:{h}[m{k}]")
         filters.append(f"[c{k}][m{k}]alphamerge[a{k}]")
-        if start + until < dur - 0.05:
-            fade_at = max(0.0, start + until - 0.5)
-            filters.append(f"[a{k}]fade=t=out:st={fade_at:.2f}:d=0.5:alpha=1[f{k}]")
-            src = f"[f{k}]"
-        else:
-            src = f"[a{k}]"
+        src = f"[a{k}]"
         filters.append(f"{last}{src}overlay={x}:{y}:eof_action=pass:shortest=0[o{k}]")
         last = f"[o{k}]"
-        print(f"  {s['id']} {ov['role']}: 원본 {total:.1f}초 → {until:.1f}초 ({speed:.2f}배속, {start:.2f}초부터)")
+        print(f"  {s['id']} {ov['role']}: 구간 {len(segs)}개, 배속 {[sp for _, sp in segs]} → {total:.1f}초 ({start:.2f}초부터)")
     filters.append(f"{last}fps={fps},format=yuv420p[vout]")
     run([*inputs, "-filter_complex", ";".join(filters), "-map", "[vout]", "-t", str(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", str(out)])
     return out
@@ -134,9 +130,20 @@ def main():
         filters.append(f"{last}[{i}:v]xfade=transition=fade:duration={xf}:offset={offset:.3f}[x{i}]")
         last = f"[x{i}]"
     preview = OUT / "preview.mp4"
-    run([*inputs, "-filter_complex", ";".join(filters), "-map", last, "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(preview)])
     total = sum(s["dur"] for s in cfg["slides"]) - xf * (len(files) - 1)
-    print(f"완료: {preview} ({total:.1f}초)")
+    video = OUT / "preview_video.mp4"
+    run([*inputs, "-filter_complex", ";".join(filters), "-map", last, "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", str(video)])
+
+    # BGM: --bgm 파일(없으면 무음). 영상 길이로 자르고 1초 페이드인, 2.5초 페이드아웃, 음량 -16 LUFS로 맞춘다
+    bgm = sys.argv[sys.argv.index("--bgm") + 1] if "--bgm" in sys.argv else None
+    if bgm:
+        af = f"atrim=0:{total:.2f},afade=t=in:d=1,afade=t=out:st={total - 2.5:.2f}:d=2.5,loudnorm=I=-16:TP=-1.5:LRA=11"
+        run(["-i", str(video), "-i", bgm, "-filter_complex", f"[1:a]{af}[a]", "-map", "0:v", "-map", "[a]",
+             "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-shortest", "-movflags", "+faststart", str(preview)])
+    else:
+        run(["-i", str(video), "-c", "copy", "-movflags", "+faststart", str(preview)])
+    video.unlink()
+    print(f"완료: {preview} ({total:.1f}초{', BGM ' + Path(bgm).name if bgm else ', 무음'})")
 
 
 if __name__ == "__main__":
