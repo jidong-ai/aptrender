@@ -3,6 +3,7 @@
 
   python3 promo/build-preview.py            # promo/out/preview.mp4 (무음)
   python3 promo/build-preview.py --bgm promo/audio/bgm_a.mp3   # BGM 포함
+  python3 promo/build-preview.py --master --bgm promo/audio/bgm_a.mp3   # 고화질 마스터(먼저 build-intro·build-motion도 --master로)
   python3 promo/build-preview.py --only 2-3 # 한 장면만 (promo/out/slides/2-3.mp4)
 
 입력
@@ -22,7 +23,15 @@ from PIL import Image, ImageDraw, ImageFont
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "out"
-SLIDES = OUT / "slides"
+MASTER = "--master" in sys.argv  # 고화질 마스터: 중간 영상 CRF 10, 최종 CRF 12(slow), 오디오 320k
+SLIDES = OUT / ("master/slides" if MASTER else "slides")
+ENC_MID = ["-preset", "slow", "-crf", "10"] if MASTER else ["-preset", "medium", "-crf", "18"]
+ENC_FINAL = ["-preset", "slow", "-crf", "12", "-tune", "stillimage", "-profile:v", "high"] if MASTER else ["-preset", "medium", "-crf", "20"]
+
+
+def src_path(rel):
+    """edit.json의 out/… 경로. 마스터 모드에서는 out/master/…의 고화질 영상을 쓴다."""
+    return HERE / (rel.replace("out/", "out/master/", 1) if MASTER else rel)
 FONT = HERE.parent / "mvp/node_modules/pretendard/dist/public/static/Pretendard-SemiBold.otf"
 
 
@@ -60,15 +69,15 @@ def build_slide(s, cfg, timeline, order):
     dur = s["dur"]
     out = SLIDES / f"{s['id']}.mp4"
     if "video" in s:  # 미리 만든 영상(인트로: build-intro.py, 장면 모션: build-motion.py)
-        return HERE / s["video"]
+        return src_path(s["video"])
     if "placeholder" in s:  # 정지 화면(움직임 없음)
         png = SLIDES / f"{s['id']}.png"
         placeholder(s["placeholder"], png)
-        run(["-loop", "1", "-t", str(dur), "-i", str(png), "-vf", f"fps={fps}", "-t", str(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", str(out)])
+        run(["-loop", "1", "-t", str(dur), "-i", str(png), "-vf", f"fps={fps}", "-t", str(dur), "-c:v", "libx264", *ENC_MID, "-pix_fmt", "yuv420p", str(out)])
         return out
 
     overlays = s.get("overlays", [])
-    inputs = ["-i", str(HERE / s["base"])]  # 바탕: 컴포넌트가 하나씩 뜨는 모션 영상
+    inputs = ["-i", str(src_path(s["base"]))]  # 바탕: 컴포넌트가 하나씩 뜨는 모션 영상
     filters = []
     last = "[0:v]"
     idx = 1
@@ -102,7 +111,7 @@ def build_slide(s, cfg, timeline, order):
         last = f"[o{k}]"
         print(f"  {s['id']} {ov['role']}: 구간 {len(segs)}개, 배속 {[sp for _, sp in segs]} → {total:.1f}초 ({start:.2f}초부터)")
     filters.append(f"{last}fps={fps},format=yuv420p[vout]")
-    run([*inputs, "-filter_complex", ";".join(filters), "-map", "[vout]", "-t", str(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", str(out)])
+    run([*inputs, "-filter_complex", ";".join(filters), "-map", "[vout]", "-t", str(dur), "-c:v", "libx264", *ENC_MID, "-pix_fmt", "yuv420p", str(out)])
     return out
 
 
@@ -129,17 +138,17 @@ def main():
         offset += cfg["slides"][i - 1]["dur"] - xf
         filters.append(f"{last}[{i}:v]xfade=transition=fade:duration={xf}:offset={offset:.3f}[x{i}]")
         last = f"[x{i}]"
-    preview = OUT / "preview.mp4"
+    preview = OUT / ("Weave_promo_1080p_master.mp4" if MASTER else "preview.mp4")
     total = sum(s["dur"] for s in cfg["slides"]) - xf * (len(files) - 1)
-    video = OUT / "preview_video.mp4"
-    run([*inputs, "-filter_complex", ";".join(filters), "-map", last, "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", str(video)])
+    video = OUT / ("master_video.mp4" if MASTER else "preview_video.mp4")
+    run([*inputs, "-filter_complex", ";".join(filters), "-map", last, "-c:v", "libx264", *ENC_FINAL, "-pix_fmt", "yuv420p", str(video)])
 
     # BGM: --bgm 파일(없으면 무음). 영상 길이로 자르고 1초 페이드인, 2.5초 페이드아웃, 음량 -16 LUFS로 맞춘다
     bgm = sys.argv[sys.argv.index("--bgm") + 1] if "--bgm" in sys.argv else None
     if bgm:
         af = f"atrim=0:{total:.2f},afade=t=in:d=1,afade=t=out:st={total - 2.5:.2f}:d=2.5,loudnorm=I=-16:TP=-1.5:LRA=11"
         run(["-i", str(video), "-i", bgm, "-filter_complex", f"[1:a]{af}[a]", "-map", "0:v", "-map", "[a]",
-             "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-shortest", "-movflags", "+faststart", str(preview)])
+             "-c:v", "copy", "-c:a", "aac", "-b:a", "320k" if MASTER else "192k", "-ar", "48000", "-shortest", "-movflags", "+faststart", str(preview)])
     else:
         run(["-i", str(video), "-c", "copy", "-movflags", "+faststart", str(preview)])
     video.unlink()

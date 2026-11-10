@@ -17,7 +17,9 @@ from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 SRC = HERE / "motion"
-OUT = HERE / "out" / "motion"
+MASTER = "--master" in sys.argv  # 고화질 마스터용(out/master/, CRF 10)
+OUT = HERE / "out" / ("master/motion" if MASTER else "motion")
+ENC = ["-preset", "slow", "-crf", "10"] if MASTER else ["-preset", "medium", "-crf", "16"]
 FPS = 30
 W, H = 1920, 1080
 START = 0.2     # 첫 컴포넌트 등장 시각
@@ -46,7 +48,7 @@ def render(key, spec, dur):
     OUT.mkdir(parents=True, exist_ok=True)
     out = OUT / f"{key}.mp4"
     proc = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-                             "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", str(out)], stdin=subprocess.PIPE)
+                             "-c:v", "libx264", *ENC, "-pix_fmt", "yuv420p", str(out)], stdin=subprocess.PIPE)
     last = None
     for f in range(int(round(dur * FPS))):
         t = f / FPS

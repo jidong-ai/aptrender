@@ -18,7 +18,9 @@ from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 SRC = HERE / "intro"
-OUT = HERE / "out" / "intro"
+MASTER = "--master" in sys.argv  # 고화질 마스터용(out/master/, CRF 10)
+OUT = HERE / "out" / ("master/intro" if MASTER else "intro")
+ENC = ["-preset", "slow", "-crf", "10"] if MASTER else ["-preset", "medium", "-crf", "16"]
 FPS = 30
 W, H = 1920, 1080
 FADE = 0.35      # 어절 하나가 나타나는 시간
@@ -114,7 +116,7 @@ def build(key, spec, typing):
     typed = typing and any(el.get("typing") for el in spec["els"])
     out = OUT / (f"{key}_typing.mp4" if typed else f"{key}.mp4")
     proc = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-                             "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", str(out)], stdin=subprocess.PIPE)
+                             "-c:v", "libx264", *ENC, "-pix_fmt", "yuv420p", str(out)], stdin=subprocess.PIPE)
     n = int(spec["dur"] * FPS)
     for f in range(n):
         t = f / FPS

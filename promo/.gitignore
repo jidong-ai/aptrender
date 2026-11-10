@@ -3,3 +3,6 @@ out/raw/
 out/slides/
 out/preview.mp4
 out/preview_video.mp4
+out/master/
+out/*_master.mp4
+out/master_video.mp4
