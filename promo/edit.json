@@ -1,5 +1,5 @@
 {
-  "_comment": "프로모션 영상 컷 구성. build-preview.py와 EDIT_GUIDE.md가 이 파일을 기준으로 한다. 시간 단위는 초. slot 좌표는 1920x1080 프레임 기준(Figma '가로 영상 16:9' 섹션의 SCREEN_SLOT_* 레이어와 같다). 인트로(I1~I3)는 build-intro.py가 만든 어절별 모션 영상(video)을 그대로 쓴다.",
+  "_comment": "프로모션 영상 컷 구성. build-preview.py·build-motion.py·EDIT_GUIDE.md가 이 파일을 기준으로 한다. 시간 단위는 초. I1~I3은 build-intro.py(어절별 등장), 나머지 장면은 build-motion.py(컴포넌트 순차 등장) 영상을 쓴다. 녹화 클립 장면(2-1~2-3)은 base 영상 위 slot 좌표(Figma SCREEN_SLOT_*)에 클립을 start초부터 얹는다. clipSpeed: 녹화 클립 재생 배속(장면 길이 = start + 클립 길이 / clipSpeed).",
   "fps": 30,
   "crossfade": 0.4,
   "slides": [
@@ -20,42 +20,39 @@
     },
     {
       "id": "H3",
-      "frame": "frames/03_H3_stages.png",
-      "dur": 7,
-      "motion": "zoom"
+      "video": "out/motion/H3.mp4",
+      "dur": 7
     },
     {
       "id": "1-0",
-      "frame": "frames/04_1-0_chapter01.png",
-      "dur": 3,
-      "motion": "zoom"
+      "video": "out/motion/1-0.mp4",
+      "dur": 3
     },
     {
       "id": "1-1",
-      "frame": "frames/05_1-1_scan.png",
-      "dur": 9,
-      "motion": "zoom"
+      "video": "out/motion/1-1.mp4",
+      "dur": 9
     },
     {
       "id": "2-0",
-      "frame": "frames/06_2-0_chapter02.png",
-      "dur": 3,
-      "motion": "zoom"
+      "video": "out/motion/2-0.mp4",
+      "dur": 3
     },
     {
       "id": "2-1",
-      "frame": "frames/07_2-1_moodboard.png",
-      "dur": 12,
+      "base": "out/motion/2-1.mp4",
+      "dur": 11.2,
       "overlays": [
         {
           "role": "xr",
           "slot": [
-            1221,
-            383,
-            609,
-            426
+            831,
+            372,
+            870,
+            608
           ],
-          "radius": 14,
+          "radius": 16,
+          "start": 1.5,
           "segments": [
             [
               "S2-1",
@@ -77,12 +74,13 @@
         {
           "role": "tablet",
           "slot": [
-            1014,
-            731,
-            377,
-            263
+            277,
+            388,
+            477,
+            334
           ],
-          "radius": 8,
+          "radius": 10,
+          "start": 1.5,
           "segments": [
             [
               "S2-1",
@@ -105,18 +103,19 @@
     },
     {
       "id": "2-2",
-      "frame": "frames/08_2-2_propose.png",
-      "dur": 13,
+      "base": "out/motion/2-2.mp4",
+      "dur": 12.3,
       "overlays": [
         {
           "role": "xr",
           "slot": [
-            1221,
-            383,
-            609,
-            426
+            831,
+            372,
+            870,
+            608
           ],
-          "radius": 14,
+          "radius": 16,
+          "start": 1.68,
           "segments": [
             [
               "S3-1c",
@@ -138,12 +137,13 @@
         {
           "role": "tablet",
           "slot": [
-            1014,
-            731,
-            377,
-            263
+            277,
+            388,
+            477,
+            334
           ],
-          "radius": 8,
+          "radius": 10,
+          "start": 1.68,
           "segments": [
             [
               "S3-1c",
@@ -166,19 +166,19 @@
     },
     {
       "id": "2-3",
-      "frame": "frames/09_2-3_apply_estimate.png",
-      "dur": 15,
+      "base": "out/motion/2-3.mp4",
+      "dur": 11.2,
       "overlays": [
         {
           "role": "xr",
           "slot": [
-            800,
-            396,
-            1030,
-            580
+            831,
+            435,
+            870,
+            489
           ],
-          "radius": 23,
-          "until": 12.5,
+          "radius": 16,
+          "start": 1.32,
           "segments": [
             [
               "S4-2c",
@@ -206,33 +206,28 @@
     },
     {
       "id": "2-4",
-      "frame": "frames/10_2-4_videocall.png",
-      "dur": 7,
-      "motion": "zoom"
+      "video": "out/motion/2-4.mp4",
+      "dur": 7
     },
     {
       "id": "3-0",
-      "frame": "frames/11_3-0_chapter03.png",
-      "dur": 3,
-      "motion": "zoom"
+      "video": "out/motion/3-0.mp4",
+      "dur": 3
     },
     {
       "id": "3-1",
-      "frame": "frames/12_3-1_schedule.png",
-      "dur": 6,
-      "motion": "zoom"
+      "video": "out/motion/3-1.mp4",
+      "dur": 6
     },
     {
       "id": "3-2",
-      "frame": "frames/13_3-2_matching.png",
-      "dur": 5,
-      "motion": "zoom"
+      "video": "out/motion/3-2.mp4",
+      "dur": 5
     },
     {
       "id": "3-3",
-      "frame": "frames/14_3-3_records.png",
-      "dur": 5,
-      "motion": "zoom"
+      "video": "out/motion/3-3.mp4",
+      "dur": 5
     },
     {
       "id": "LIVE",
@@ -241,9 +236,9 @@
     },
     {
       "id": "E1",
-      "frame": "frames/15_E1_feedback.png",
-      "dur": 6,
-      "motion": "zoom"
+      "video": "out/motion/E1.mp4",
+      "dur": 6
     }
-  ]
+  ],
+  "clipSpeed": 1.9
 }

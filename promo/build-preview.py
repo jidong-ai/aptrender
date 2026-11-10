@@ -58,23 +58,16 @@ def build_slide(s, cfg, timeline, order):
     fps = cfg["fps"]
     dur = s["dur"]
     out = SLIDES / f"{s['id']}.mp4"
-    if "video" in s:  # 미리 만든 영상(인트로 어절별 모션: build-intro.py)
+    if "video" in s:  # 미리 만든 영상(인트로: build-intro.py, 장면 모션: build-motion.py)
         return HERE / s["video"]
-    if "placeholder" in s:
+    if "placeholder" in s:  # 정지 화면(움직임 없음)
         png = SLIDES / f"{s['id']}.png"
         placeholder(s["placeholder"], png)
-        frame = png
-    else:
-        frame = HERE / s["frame"]
-    overlays = s.get("overlays", [])
-    if not overlays:
-        n = int(dur * fps)
-        zoom = "zoompan=z='1+0.03*on/{n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={n}:s=1920x1080:fps={fps}".format(n=n, fps=fps)
-        vf = f"scale=3840:-1,{zoom}" if s.get("motion") == "zoom" else f"fps={fps}"
-        run(["-loop", "1", "-t", str(dur), "-i", str(frame), "-vf", vf, "-t", str(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", str(out)])
+        run(["-loop", "1", "-t", str(dur), "-i", str(png), "-vf", f"fps={fps}", "-t", str(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", str(out)])
         return out
 
-    inputs = ["-loop", "1", "-t", str(dur), "-i", str(frame)]
+    overlays = s.get("overlays", [])
+    inputs = ["-i", str(HERE / s["base"])]  # 바탕: 컴포넌트가 하나씩 뜨는 모션 영상
     filters = []
     last = "[0:v]"
     idx = 1
@@ -82,9 +75,10 @@ def build_slide(s, cfg, timeline, order):
         track = timeline[ov["role"]]
         video = OUT / track["video"]
         x, y, w, h = ov["slot"]
-        until = ov.get("until", dur)
+        start = ov.get("start", 0.0)  # 슬롯 자리 화면이 다 뜬 뒤 클립 시작
         ranges = [seg_range(track, order, *seg) for seg in ov["segments"]]
         total = sum(b - a for a, b in ranges)
+        until = ov.get("until", dur - start)
         speed = total / until
         parts = []
         for a, b in ranges:
@@ -98,19 +92,19 @@ def build_slide(s, cfg, timeline, order):
         idx += 1
         labels = "".join(f"[p{k}_{i}]" for i in range(mask_idx - len(ranges), mask_idx))
         filters += parts
-        filters.append(f"{labels}concat=n={len(ranges)}:v=1:a=0,setpts=PTS/{speed:.4f},fps={fps},"
+        filters.append(f"{labels}concat=n={len(ranges)}:v=1:a=0,setpts=PTS/{speed:.4f}+{start}/TB,fps={fps},"
                        f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},format=rgba[c{k}]")
         filters.append(f"[{mask_idx}:v]format=gray,scale={w}:{h}[m{k}]")
         filters.append(f"[c{k}][m{k}]alphamerge[a{k}]")
-        if until < dur:
-            fade_at = max(0.0, until - 0.5)
+        if start + until < dur - 0.05:
+            fade_at = max(0.0, start + until - 0.5)
             filters.append(f"[a{k}]fade=t=out:st={fade_at:.2f}:d=0.5:alpha=1[f{k}]")
             src = f"[f{k}]"
         else:
             src = f"[a{k}]"
         filters.append(f"{last}{src}overlay={x}:{y}:eof_action=pass:shortest=0[o{k}]")
         last = f"[o{k}]"
-        print(f"  {s['id']} {ov['role']}: 원본 {total:.1f}초 → {until:.1f}초 ({speed:.2f}배속)")
+        print(f"  {s['id']} {ov['role']}: 원본 {total:.1f}초 → {until:.1f}초 ({speed:.2f}배속, {start:.2f}초부터)")
     filters.append(f"{last}fps={fps},format=yuv420p[vout]")
     run([*inputs, "-filter_complex", ";".join(filters), "-map", "[vout]", "-t", str(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "18", str(out)])
     return out
