@@ -262,8 +262,14 @@ def main():
     only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
     slides = [s for s in cfg["slides"] if not only or s["id"] == only]
 
+    redo = sys.argv[sys.argv.index("--redo") + 1].split(",") if "--redo" in sys.argv else None
+
     def build(s):
         key, comps = manifest[s["id"]]
+        if redo is not None and s["id"] not in redo:  # --redo 1-1,I3: 나머지 장면은 지난 결과를 쓴다
+            done = WORK / ("slides" if s.get("overlays") else "scenes") / f"{s['id']}.mp4"
+            if done.exists():
+                return done
         base = render_scene(s["id"], key, comps, s["dur"])
         return add_overlays(s, base, cfg, timeline, order) if s.get("overlays") else base
 
