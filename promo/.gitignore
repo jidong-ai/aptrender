@@ -6,3 +6,7 @@ out/preview_video.mp4
 out/master/
 out/*_master.mp4
 out/master_video.mp4
+out/4k/
+out/*_4k.mp4
+# 4K 소스 PNG(약 90MB): Figma에서 2배로 다시 내보낼 수 있어 manifest.json만 커밋한다
+scenes4k/**/*.png
